@@ -1,5 +1,6 @@
 package com.hortonworks.spark.sql.hive.llap;
 
+import com.hortonworks.spark.sql.hive.llap.util.SerializableHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SaveMode;
@@ -38,7 +39,7 @@ public class HiveWarehouseDataSourceWriter implements SupportsWriteInternalRow {
   }
 
   @Override public DataWriterFactory<InternalRow> createInternalRowWriterFactory() {
-    return new HiveWarehouseDataWriterFactory(jobId, schema, path, new SerializableConfiguration(conf));
+    return new HiveWarehouseDataWriterFactory(jobId, schema, path, new SerializableHadoopConfiguration(conf));
   }
 
   @Override public void commit(WriterCommitMessage[] messages) {

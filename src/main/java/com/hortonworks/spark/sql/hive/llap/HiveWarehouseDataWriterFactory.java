@@ -1,5 +1,6 @@
 package com.hortonworks.spark.sql.hive.llap;
 
+import com.hortonworks.spark.sql.hive.llap.util.SerializableHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -18,10 +19,10 @@ public class HiveWarehouseDataWriterFactory implements DataWriterFactory<Interna
   protected String jobId;
   protected StructType schema;
   private Path path;
-  private SerializableConfiguration conf;
+  private SerializableHadoopConfiguration conf;
 
   public HiveWarehouseDataWriterFactory(String jobId, StructType schema,
-      Path path, SerializableConfiguration conf) {
+      Path path, SerializableHadoopConfiguration conf) {
     this.jobId = jobId;
     this.schema = schema;
     this.path = path;
@@ -32,11 +33,11 @@ public class HiveWarehouseDataWriterFactory implements DataWriterFactory<Interna
     Path filePath = new Path(this.path, String.format("%s_%s_%s", jobId, partitionId, attemptNumber));
     FileSystem fs = null;
     try {
-      fs = filePath.getFileSystem(conf.value());
+      fs = filePath.getFileSystem(conf.get());
     } catch (IOException e) {
       e.printStackTrace();
     }
-    return getDataWriter(conf.value(), jobId, schema, partitionId, attemptNumber,
+    return getDataWriter(conf.get(), jobId, schema, partitionId, attemptNumber,
         fs, filePath);
   }
 

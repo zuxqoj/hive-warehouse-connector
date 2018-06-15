@@ -17,38 +17,26 @@ public class HiveWarehouseDataWriterFactory implements DataWriterFactory<Interna
 
   protected String jobId;
   protected StructType schema;
-  protected String path;
-  protected Configuration conf;
-  protected byte[] confBytes;
+  private Path path;
+  private SerializableConfiguration conf;
 
-  public HiveWarehouseDataWriterFactory() {
-    ByteArrayInputStream confByteArrayStream = new ByteArrayInputStream(confBytes);
-    conf = new Configuration();
-
-    try(DataInputStream confByteData = new DataInputStream(confByteArrayStream)) {
-      conf.readFields(confByteData);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public HiveWarehouseDataWriterFactory(String jobId, StructType schema, String path,
-      byte[] confBytes) {
+  public HiveWarehouseDataWriterFactory(String jobId, StructType schema,
+      Path path, SerializableConfiguration conf) {
     this.jobId = jobId;
     this.schema = schema;
     this.path = path;
-    this.confBytes = confBytes;
+    this.conf = conf;
   }
 
   @Override public DataWriter<InternalRow> createDataWriter(int partitionId, int attemptNumber) {
     Path filePath = new Path(this.path, String.format("%s_%s_%s", jobId, partitionId, attemptNumber));
     FileSystem fs = null;
     try {
-      fs = filePath.getFileSystem(conf);
+      fs = filePath.getFileSystem(conf.value());
     } catch (IOException e) {
       e.printStackTrace();
     }
-    return getDataWriter(conf, jobId, schema, partitionId, attemptNumber,
+    return getDataWriter(conf.value(), jobId, schema, partitionId, attemptNumber,
         fs, filePath);
   }
 

@@ -8,7 +8,6 @@ import org.apache.spark.sql.sources.v2.writer.DataWriterFactory;
 import org.apache.spark.sql.sources.v2.writer.SupportsWriteInternalRow;
 import org.apache.spark.sql.sources.v2.writer.WriterCommitMessage;
 import org.apache.spark.sql.types.StructType;
-import org.apache.spark.util.SerializableConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
@@ -39,15 +38,7 @@ public class HiveWarehouseDataSourceWriter implements SupportsWriteInternalRow {
   }
 
   @Override public DataWriterFactory<InternalRow> createInternalRowWriterFactory() {
-    ByteArrayOutputStream confByteArrayStream = new ByteArrayOutputStream();
-    byte[] confBytes;
-    try(DataOutputStream confByteData = new DataOutputStream(confByteArrayStream)) {
-      conf.write(confByteData);
-      confBytes = confByteArrayStream.toByteArray();
-    } catch(Exception e) {
-      throw new RuntimeException(e);
-    }
-    return new HiveWarehouseDataWriterFactory(jobId, schema, path.toString(), confBytes);
+    return new HiveWarehouseDataWriterFactory(jobId, schema, path, new SerializableConfiguration(conf));
   }
 
   @Override public void commit(WriterCommitMessage[] messages) {

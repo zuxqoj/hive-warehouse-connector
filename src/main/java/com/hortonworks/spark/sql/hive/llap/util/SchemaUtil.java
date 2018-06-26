@@ -16,12 +16,7 @@ public class SchemaUtil {
     List<FieldDesc> columns = schema.getColumns();
     List<String> types = new ArrayList<>();
     for(FieldDesc fieldDesc : columns) {
-      String name;
-      if(fieldDesc.getName().contains(".")) {
-        name = fieldDesc.getName().split("\\.")[1];
-      } else {
-        name = fieldDesc.getName();
-      }
+      String name = fieldDesc.getName();
       types.add(format("`%s` %s", name, fieldDesc.getTypeInfo().toString()));
     }
     return StructType.fromDDL(String.join(", ", types));

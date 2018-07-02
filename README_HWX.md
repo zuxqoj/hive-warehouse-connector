@@ -311,6 +311,5 @@ CreateTableBuilder Interface
 
       //Creates ORC table in Hive from builder instance
       void create();
-
     }
 ```

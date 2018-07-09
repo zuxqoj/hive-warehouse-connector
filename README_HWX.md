@@ -211,7 +211,7 @@ Supported Types
 | FloatType       | Float                   |
 | DoubleType      | Double                  |
 | DecimalType     | Decimal                 |
-| StringType\*    | String, Char, Varchar\* |
+| StringType\*    | String, Varchar\* |
 | BinaryType      | Binary                  |
 | BooleanType     | Boolean                 |
 | TimestampType\* | Timestamp\*             |
@@ -219,7 +219,7 @@ Supported Types
 | ArrayType       | Array                   |
 | StructType      | Struct                  |
 
-- A Hive String, Char, Varchar column will be converted into a Spark StringType column.
+- A Hive String or Varchar column will be converted into a Spark StringType column.
 - When a Spark StringType column has maxLength metadata, it will be converted into a Hive Varchar column. Otherwise, it will be converted into a Hive String column.
 - A Hive Timestamp column will lose sub-microsecond precision when it is converted into a Spark TimestampType column. Because a Spark TimestampType column is microsecond precision, while a Hive Timestamp column is nanosecond precision.
 
@@ -231,6 +231,7 @@ Not currently supported types
 | MapType              | Map       |
 | N/A                  | Union     |
 | NullType             | N/A       |
+| N/A                  | Char      |
 
 HiveWarehouseSession Interface
 ==============================
@@ -313,3 +314,18 @@ CreateTableBuilder Interface
       void create();
     }
 ```
+Zeppelin Configuration
+==============================
+HiveWarehouseConnector can be used in Zeppelin notebooks using the `spark2` interpreter.
+Modify or add the following properties to your `spark2` interpreter settings
+(see the section "Modifying Interpreter Settings" in the HDP _Apache Zeppelin Component Guide_)
+
+| Property        | Description             |
+| --------------- | ----------------------- |
+| spark.jars       | /usr/hdp/current/hive-warehouse-connector/hive-warehouse-connector-assembly-`<version>`.jar |
+| spark.submit.pyfiles | /usr/hdp/current/hive-warehouse-connector/pyspark_hwc-`<version>`.zip |
+| spark.hadoop.hive.llap.daemon.service.hosts | See section on HiveWarehouseConnector Configuration |
+| spark.sql.hive.hiveserver2.jdbc.url | See section on HiveWarehouseConnector Configuration  |
+| spark.yarn.security.credentials.hiveserver2.enabled | See section on HiveWarehouseConnector Configuration  |
+| spark.sql.hive.hiveserver2.jdbc.url.principal | See section on HiveWarehouseConnector Configuration  |
+| spark.hadoop.hive.zookeeper.quorum | See section on HiveWarehouseConnector Configuration  |

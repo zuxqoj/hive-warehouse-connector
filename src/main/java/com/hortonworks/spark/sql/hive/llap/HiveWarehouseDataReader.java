@@ -1,5 +1,7 @@
 package com.hortonworks.spark.sql.hive.llap;
 
+import com.codahale.metrics.Timer;
+import com.hortonworks.spark.sql.hive.llap.util.Metrics;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.hadoop.hive.llap.LlapArrowBatchRecordReader;
 import org.apache.hadoop.hive.llap.LlapBaseInputFormat;
@@ -30,6 +32,8 @@ public class HiveWarehouseDataReader implements DataReader<ColumnarBatch> {
 
   private RecordReader<?, ArrowWrapperWritable> reader;
   private ArrowWrapperWritable wrapperWritable = new ArrowWrapperWritable();
+  private Metrics metrics = new Metrics();
+  private Timer.Context timer;
 
   public HiveWarehouseDataReader(LlapInputSplit split, JobConf conf, long arrowAllocatorMax) throws Exception {
     //Set TASK_ATTEMPT_ID to submit to LlapOutputFormatService
@@ -53,7 +57,13 @@ public class HiveWarehouseDataReader implements DataReader<ColumnarBatch> {
   }
 
   @Override public boolean next() throws IOException {
+    if(timer == null) {
+      timer = metrics.getTimer("task_read").time();
+    }
     boolean hasNextBatch = reader.next(null, wrapperWritable);
+    if(!hasNextBatch) {
+      timer.stop();
+    }
     return hasNextBatch;
   }
 

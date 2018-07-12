@@ -1,8 +1,9 @@
 package com.hortonworks.spark.sql.hive.llap;
 
 import java.util.concurrent.TimeUnit;
-import org.elasticsearch.metrics.*;
+
 import com.codahale.metrics.*;
+import com.hortonworks.spark.sql.hive.llap.util.Metrics;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.hadoop.hive.llap.LlapArrowBatchRecordReader;
 import org.apache.hadoop.hive.llap.LlapBaseInputFormat;
@@ -28,37 +29,19 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.hive.llap.SubmitWorkInfo;
 import org.apache.hadoop.mapreduce.TaskType;
+import static com.codahale.metrics.MetricRegistry.name;
 
 public class HiveWarehouseDataReader implements DataReader<ColumnarBatch> {
 
   private RecordReader<?, ArrowWrapperWritable> reader;
   private ArrowWrapperWritable wrapperWritable = new ArrowWrapperWritable();
-  private Timer.Context timer;
-  private static boolean isRegistered = false;
-  private static MetricRegistry registry;
-  private long arrowAllocatorMax;
+  private Timer.Context readTimer;
 
   public HiveWarehouseDataReader(LlapInputSplit split, JobConf conf, long arrowAllocatorMax) throws Exception {
     //Set TASK_ATTEMPT_ID to submit to LlapOutputFormatService
     conf.set(MRJobConfig.TASK_ATTEMPT_ID, getTaskAttemptID(split, conf).toString());
     this.reader = getRecordReader(split, conf, arrowAllocatorMax);
-    this.arrowAllocatorMax = arrowAllocatorMax;
-    synchronized(HiveWarehouseDataReader.class) {
-      if(!isRegistered) {   
-        registry = new MetricRegistry();
-        ElasticsearchReporter reporter = ElasticsearchReporter.forRegistry(registry)
-          .hosts("cn105-10.l42scl.hortonworks.com:9200").index("hwc")
-          .build();
-        reporter.start(1, TimeUnit.SECONDS);
-        registry.register("arrow-memory", new Gauge<Long>() {
-          @Override
-            public Long getValue() {
-              return org.apache.hadoop.hive.ql.io.arrow.RootAllocatorFactory.INSTANCE.getOrCreateRootAllocator(arrowAllocatorMax).getAllocatedMemory();
-            }
-        });
-        isRegistered = true;
-      }
-    }
+
   }
 
   private static TaskAttemptID getTaskAttemptID(LlapInputSplit split, JobConf conf) throws IOException {
@@ -77,12 +60,12 @@ public class HiveWarehouseDataReader implements DataReader<ColumnarBatch> {
   }
 
   @Override public boolean next() throws IOException {
-    if(timer == null) {
-      timer = registry.timer("task_read").time();
+    if(readTimer == null) {
+      readTimer = Metrics.registry().timer(name(HiveWarehouseDataReader.class, "task_read")).time();
     }
     boolean hasNextBatch = reader.next(null, wrapperWritable);
     if(!hasNextBatch) {
-      timer.stop();
+      readTimer.stop();
     }
     return hasNextBatch;
   }
@@ -91,6 +74,7 @@ public class HiveWarehouseDataReader implements DataReader<ColumnarBatch> {
     //Spark asks you to convert one column at a time so that different
     //column types can be handled differently.
     //NumOfCols << NumOfRows so this is negligible
+    Timer.Context batchTimer = Metrics.registry().timer(name(HiveWarehouseDataReader.class, "batch_read")).time();
     List<FieldVector> fieldVectors = wrapperWritable.getVectorSchemaRoot().getFieldVectors();
     ColumnVector[] columnVectors = new ColumnVector[fieldVectors.size()];
     Iterator<FieldVector> iterator = fieldVectors.iterator();
@@ -105,6 +89,7 @@ public class HiveWarehouseDataReader implements DataReader<ColumnarBatch> {
     }
     ColumnarBatch columnarBatch = new ColumnarBatch(columnVectors);
     columnarBatch.setNumRows(rowCount);
+    batchTimer.stop();
     return columnarBatch;
   }
 

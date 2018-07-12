@@ -1,40 +1,35 @@
 package com.hortonworks.spark.sql.hive.llap.util;
 
-import org.apache.spark.metrics.source.Source;
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import org.elasticsearch.metrics.*;
 
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-public class Metrics implements Source {
+public class Metrics {
 
-  MetricRegistry registry;
+  private static MetricRegistry registry = null;
+  private static boolean isRegistered = false;
 
-  public Metrics() {
-    registry = new MetricRegistry();
-  }
-
-  public Timer getTimer(String name) {
-    return registry.timer(name);
-  }
-
-  public <T> T withTimer(String name, Supplier<T> supplier) {
-    Timer timer = registry.timer(name);
-    Timer.Context context = timer.time();
-    T value;
-    try {
-      value = supplier.get();
-    } finally {
-      context.stop();
+  public static MetricRegistry registry() {
+    synchronized(Metrics.class) {
+      if(!isRegistered) {
+        registry = new MetricRegistry();
+        try {
+          ElasticsearchReporter reporter =
+              ElasticsearchReporter.forRegistry(registry).hosts("cn105-10.l42scl.hortonworks.com:9200").index("hwc").build();
+          reporter.start(1, TimeUnit.SECONDS);
+          isRegistered = true;
+        } catch(IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+      }
     }
-    return value;
+    return registry;
   }
-
-  @Override
-  public String sourceName() { return "hwc"; }
-
-  @Override
-  public MetricRegistry metricRegistry() { return registry; }
 
 }
 

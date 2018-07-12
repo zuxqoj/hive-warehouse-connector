@@ -1,6 +1,8 @@
 package com.hortonworks.spark.sql.hive.llap;
 
+import com.codahale.metrics.Timer;
 import com.hortonworks.spark.sql.hive.llap.util.JobUtil;
+import com.hortonworks.spark.sql.hive.llap.util.Metrics;
 import com.hortonworks.spark.sql.hive.llap.util.SchemaUtil;
 import org.apache.hadoop.hive.llap.LlapBaseInputFormat;
 import org.apache.hadoop.mapred.InputSplit;
@@ -31,6 +33,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
+import static com.codahale.metrics.MetricRegistry.name;
 import static com.hortonworks.spark.sql.hive.llap.FilterPushdown.buildWhereClause;
 import static com.hortonworks.spark.sql.hive.llap.util.HiveQlUtil.*;
 import static com.hortonworks.spark.sql.hive.llap.util.JobUtil.replaceSparkHiveDriver;
@@ -106,7 +109,9 @@ public class HiveWarehouseDataSourceReader
       try {
         JobConf conf = JobUtil.createJobConf(options, query);
         llapInputFormat = new LlapBaseInputFormat(false, Long.MAX_VALUE);
+        Timer.Context timer = Metrics.registry().timer(name(HiveWarehouseDataSourceReader.class, "get-schema")).time();
         InputSplit[] splits = llapInputFormat.getSplits(conf, 0);
+        timer.stop();
         LlapInputSplit schemaSplit = (LlapInputSplit) splits[0];
         Schema schema = schemaSplit.getSchema();
         return SchemaUtil.convertSchema(schema);
@@ -172,7 +177,9 @@ public class HiveWarehouseDataSourceReader
       JobConf jobConf = JobUtil.createJobConf(options, query);
       LlapBaseInputFormat llapInputFormat = new LlapBaseInputFormat(false, Long.MAX_VALUE);
       //numSplits arg not currently supported, use 1 as dummy arg
+      Timer.Context timer = Metrics.registry().timer(name(HiveWarehouseDataSourceReader.class, "get-splits")).time();
       InputSplit[] splits = llapInputFormat.getSplits(jobConf, 1);
+      timer.stop();
       for (InputSplit split : splits) {
         tasks.add(getDataReaderFactory(split, jobConf, getArrowAllocatorMax()));
       }

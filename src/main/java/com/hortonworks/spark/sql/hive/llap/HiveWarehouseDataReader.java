@@ -1,7 +1,8 @@
 package com.hortonworks.spark.sql.hive.llap;
 
-import com.codahale.metrics.Timer;
-import com.hortonworks.spark.sql.hive.llap.util.Metrics;
+import java.util.concurrent.TimeUnit;
+import org.elasticsearch.metrics.*;
+import com.codahale.metrics.*;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.hadoop.hive.llap.LlapArrowBatchRecordReader;
 import org.apache.hadoop.hive.llap.LlapBaseInputFormat;
@@ -32,13 +33,32 @@ public class HiveWarehouseDataReader implements DataReader<ColumnarBatch> {
 
   private RecordReader<?, ArrowWrapperWritable> reader;
   private ArrowWrapperWritable wrapperWritable = new ArrowWrapperWritable();
-  private Metrics metrics = new Metrics();
   private Timer.Context timer;
+  private static boolean isRegistered = false;
+  private static MetricRegistry registry;
+  private long arrowAllocatorMax;
 
   public HiveWarehouseDataReader(LlapInputSplit split, JobConf conf, long arrowAllocatorMax) throws Exception {
     //Set TASK_ATTEMPT_ID to submit to LlapOutputFormatService
     conf.set(MRJobConfig.TASK_ATTEMPT_ID, getTaskAttemptID(split, conf).toString());
     this.reader = getRecordReader(split, conf, arrowAllocatorMax);
+    this.arrowAllocatorMax = arrowAllocatorMax;
+    synchronized(HiveWarehouseDataReader.class) {
+      if(!isRegistered) {   
+        registry = new MetricRegistry();
+        ElasticsearchReporter reporter = ElasticsearchReporter.forRegistry(registry)
+          .hosts("cn105-10.l42scl.hortonworks.com:9200").index("hwc")
+          .build();
+        reporter.start(1, TimeUnit.SECONDS);
+        registry.register("arrow-memory", new Gauge<Long>() {
+          @Override
+            public Long getValue() {
+              return org.apache.hadoop.hive.ql.io.arrow.RootAllocatorFactory.INSTANCE.getOrCreateRootAllocator(arrowAllocatorMax).getAllocatedMemory();
+            }
+        });
+        isRegistered = true;
+      }
+    }
   }
 
   private static TaskAttemptID getTaskAttemptID(LlapInputSplit split, JobConf conf) throws IOException {
@@ -58,7 +78,7 @@ public class HiveWarehouseDataReader implements DataReader<ColumnarBatch> {
 
   @Override public boolean next() throws IOException {
     if(timer == null) {
-      timer = metrics.getTimer("task_read").time();
+      timer = registry.timer("task_read").time();
     }
     boolean hasNextBatch = reader.next(null, wrapperWritable);
     if(!hasNextBatch) {

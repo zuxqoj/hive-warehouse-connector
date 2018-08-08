@@ -63,11 +63,7 @@ public class HiveWarehouseDataReader implements DataReader<ColumnarBatch> {
     //Use per-task allocator for accounting only, no need to reserve per-task memory
     long childAllocatorReservation = 0L;
     //Break out accounting of direct memory per-task, so we can check no memory is leaked when task is completed
-    this.allocator = RootAllocatorFactory.INSTANCE.getOrCreateRootAllocator(arrowAllocatorMax).newChildAllocator(
-        attemptId,
-        childAllocatorReservation,
-        arrowAllocatorMax);
-    LlapBaseInputFormat input = new LlapBaseInputFormat(true, allocator);
+    LlapBaseInputFormat input = new LlapBaseInputFormat(true, arrowAllocatorMax);
     return input.getRecordReader(split, conf, null);
   }
 

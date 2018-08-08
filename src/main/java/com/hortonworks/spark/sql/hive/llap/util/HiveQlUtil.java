@@ -100,6 +100,18 @@ public class HiveQlUtil {
         return format(" TBLPROPERTIES (%s) ", keyValuePairs);
     }
 
+    public static String getTableProperty(String tbl, String property) {
+        return format("SHOW TBLPROPERTIES %s('%s')", tbl, property);
+    }
+
+    public static String getTableProperties(String tbl) {
+      return format("SHOW TBLPROPERTIES %s", tbl);
+    }
+
+    public static String updateTableProperty(String tbl, String property, String value) {
+      return format("ALTER TABLE %s SET TBLPROPERTIES ('%s' = '%s')", tbl, property, value);
+    }
+
     public static String createTablePrelude(String database, String table, boolean ifNotExists) {
         return format("CREATE TABLE %s %s.%s ",
                 orBlank(ifNotExists, "IF NOT EXISTS"),

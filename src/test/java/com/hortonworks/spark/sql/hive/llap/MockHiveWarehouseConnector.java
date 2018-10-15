@@ -14,23 +14,19 @@ import org.apache.hadoop.hive.ql.io.arrow.RootAllocatorFactory;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordReader;
-import org.apache.spark.sql.SaveMode;
-import org.apache.spark.sql.sources.v2.DataSourceOptions;
-import org.apache.spark.sql.sources.v2.reader.DataReader;
-import org.apache.spark.sql.sources.v2.reader.DataReaderFactory;
 import org.apache.spark.sql.sources.v2.reader.DataSourceReader;
+import org.apache.spark.sql.sources.v2.reader.InputPartition;
+import org.apache.spark.sql.sources.v2.reader.InputPartitionReader;
 import org.apache.spark.sql.sources.v2.writer.DataSourceWriter;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.sql.vectorized.ColumnarBatch;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 
 import java.io.IOException;
-import java.sql.Struct;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public class MockHiveWarehouseConnector extends HiveWarehouseConnector {
 
@@ -38,9 +34,14 @@ public class MockHiveWarehouseConnector extends HiveWarehouseConnector {
   public static Map<String, Object> writeOutputBuffer = new HashMap<>();
   public static long COUNT_STAR_TEST_VALUE = 1024;
 
+  private MockHiveWarehouseDataSourceReader reader;
+
   @Override
   protected DataSourceReader getDataSourceReader(Map<String, String> params) throws IOException {
-    return new MockHiveWarehouseDataSourceReader(params);
+    if (reader == null) {
+      reader = new MockHiveWarehouseDataSourceReader(params);
+    }
+    return reader;
   }
 
   @Override
@@ -49,9 +50,9 @@ public class MockHiveWarehouseConnector extends HiveWarehouseConnector {
     return new MockWriteSupport.MockHiveWarehouseDataSourceWriter(options, jobId, schema, path, conf);
   }
 
-  public static class MockHiveWarehouseDataReader extends HiveWarehouseDataReader {
+  public static class MockHiveWarehouseInputPartitionReader extends HiveWarehouseInputPartitionReader {
 
-    public MockHiveWarehouseDataReader(LlapInputSplit split, JobConf conf, long arrowAllocatorMax) throws Exception {
+    public MockHiveWarehouseInputPartitionReader(LlapInputSplit split, JobConf conf, long arrowAllocatorMax) throws Exception {
       super(split, conf, arrowAllocatorMax);
     }
 
@@ -67,24 +68,24 @@ public class MockHiveWarehouseConnector extends HiveWarehouseConnector {
     }
   }
 
-  public static class MockHiveWarehouseDataReaderFactory extends HiveWarehouseDataReaderFactory {
+  public static class MockHiveWarehouseInputPartition extends HiveWarehouseInputPartition {
 
-    public MockHiveWarehouseDataReaderFactory(InputSplit split, JobConf jobConf, long arrowAllocatorMax) {
+    public MockHiveWarehouseInputPartition(InputSplit split, JobConf jobConf, long arrowAllocatorMax) {
     }
 
     @Override
-    public DataReader<ColumnarBatch> createDataReader() {
+    public InputPartitionReader<ColumnarBatch> createPartitionReader() {
       try {
-        return getDataReader(null, new JobConf(), Long.MAX_VALUE);
+        return getInputPartitionReader(null, new JobConf(), Long.MAX_VALUE);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
     }
 
     @Override
-    protected DataReader<ColumnarBatch> getDataReader(LlapInputSplit split, JobConf jobConf, long arrowAllocatorMax)
+    protected InputPartitionReader<ColumnarBatch> getInputPartitionReader(LlapInputSplit split, JobConf jobConf, long arrowAllocatorMax)
         throws Exception {
-      return new MockHiveWarehouseDataReader(split, jobConf, arrowAllocatorMax);
+      return new MockHiveWarehouseInputPartitionReader(split, jobConf, arrowAllocatorMax);
     }
   }
 
@@ -100,12 +101,12 @@ public class MockHiveWarehouseConnector extends HiveWarehouseConnector {
     }
 
     @Override
-    protected DataReaderFactory<ColumnarBatch> getDataReaderFactory(InputSplit split, JobConf jobConf, long arrowAllocatorMax) {
-      return new MockHiveWarehouseDataReaderFactory(split, jobConf, arrowAllocatorMax);
+    protected HiveWarehouseInputPartition getInputPartition(InputSplit split, JobConf jobConf, long arrowAllocatorMax) {
+      return new MockHiveWarehouseInputPartition(split, jobConf, arrowAllocatorMax);
     }
 
-    protected List<DataReaderFactory<ColumnarBatch>> getSplitsFactories(String query) {
-      return Lists.newArrayList(new MockHiveWarehouseDataReaderFactory(null, null, 0));
+    protected List<InputPartition<ColumnarBatch>> getSplitsInputPartitions(String query) {
+      return Lists.newArrayList(new MockHiveWarehouseInputPartition(null, null, 0));
     }
 
     @Override

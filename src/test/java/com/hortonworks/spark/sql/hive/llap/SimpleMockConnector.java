@@ -17,16 +17,18 @@
 
 package com.hortonworks.spark.sql.hive.llap;
 
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.catalyst.expressions.GenericRow;
+import com.google.common.collect.Lists;
+import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.sources.v2.DataSourceOptions;
 import org.apache.spark.sql.sources.v2.DataSourceV2;
 import org.apache.spark.sql.sources.v2.ReadSupport;
 import org.apache.spark.sql.sources.v2.SessionConfigSupport;
-import org.apache.spark.sql.sources.v2.reader.DataReader;
-import org.apache.spark.sql.sources.v2.reader.DataReaderFactory;
 import org.apache.spark.sql.sources.v2.reader.DataSourceReader;
+import org.apache.spark.sql.sources.v2.reader.InputPartition;
+import org.apache.spark.sql.sources.v2.reader.InputPartitionReader;
 import org.apache.spark.sql.types.StructType;
+import scala.collection.JavaConversions;
+import scala.collection.Seq;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -44,7 +46,7 @@ public class SimpleMockConnector implements DataSourceV2, ReadSupport, SessionCo
         return HiveWarehouseSession.CONF_PREFIX;
     }
 
-    public static class SimpleMockDataReader implements DataReader<Row> {
+    public static class SimpleMockDataReader implements InputPartitionReader<InternalRow> {
 
         // Exposed for Python side.
         public static final int RESULT_SIZE = 10;
@@ -56,8 +58,10 @@ public class SimpleMockConnector implements DataSourceV2, ReadSupport, SessionCo
         }
 
         @Override
-        public Row get() {
-            Row value = new GenericRow(new Object[] {i, "Element " + i});
+        public InternalRow get() {
+            List<Object> l = Lists.newArrayList(i, "Element " + i);
+            Seq<Object> seq = JavaConversions.asScalaBuffer(l).toSeq();
+            InternalRow value = InternalRow.fromSeq(seq);
             i++;
             return value;
         }
@@ -68,13 +72,11 @@ public class SimpleMockConnector implements DataSourceV2, ReadSupport, SessionCo
         }
     }
 
-    public static class SimpleMockDataReaderFactory implements DataReaderFactory<Row> {
-
+    public static class SimpleMockDataReaderFactory implements InputPartition<InternalRow> {
         @Override
-        public DataReader<Row> createDataReader() {
+        public InputPartitionReader<InternalRow> createPartitionReader() {
             return new SimpleMockDataReader();
         }
-
     }
 
     public static class SimpleMockDataSourceReader implements DataSourceReader {
@@ -87,7 +89,7 @@ public class SimpleMockConnector implements DataSourceV2, ReadSupport, SessionCo
         }
 
         @Override
-        public List<DataReaderFactory<Row>> createDataReaderFactories() {
+        public List<InputPartition<InternalRow>> planInputPartitions() {
             return Arrays.asList(new SimpleMockDataReaderFactory());
         }
     }

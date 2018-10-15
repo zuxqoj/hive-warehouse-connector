@@ -1,13 +1,12 @@
 package com.hortonworks.spark.sql.hive.llap;
 
-import java.util.List;
-
+import com.hortonworks.spark.hive.utils.HiveIsolatedClassLoader;
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.sources.v2.writer.DataWriter;
 import org.apache.spark.sql.sources.v2.writer.DataWriterFactory;
 import org.apache.spark.sql.types.StructType;
 
-import com.hortonworks.spark.hive.utils.HiveIsolatedClassLoader;
+import java.util.List;
 
 public class HiveStreamingDataWriterFactory implements DataWriterFactory<InternalRow> {
 
@@ -33,12 +32,12 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
   }
 
   @Override
-  public DataWriter<InternalRow> createDataWriter(int partitionId, int attemptNumber) {
+  public DataWriter<InternalRow> createDataWriter(int partitionId, long taskId, long epochId) {
     ClassLoader restoredClassloader = Thread.currentThread().getContextClassLoader();
     ClassLoader isolatedClassloader = HiveIsolatedClassLoader.isolatedClassLoader();
     try {
       Thread.currentThread().setContextClassLoader(isolatedClassloader);
-      return new HiveStreamingDataWriter(jobId, schema, commitIntervalRows, partitionId, attemptNumber, db,
+      return new HiveStreamingDataWriter(jobId, schema, commitIntervalRows, partitionId, taskId, epochId, db,
         table, partition, metastoreUri, metastoreKrbPrincipal);
     } finally {
       Thread.currentThread().setContextClassLoader(restoredClassloader);

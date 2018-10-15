@@ -6,11 +6,7 @@ import org.apache.hadoop.hive.llap.LlapBaseInputFormat;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.sql.sources.Filter;
-import org.apache.spark.sql.sources.v2.reader.DataReaderFactory;
-import org.apache.spark.sql.sources.v2.reader.DataSourceReader;
-import org.apache.spark.sql.sources.v2.reader.SupportsPushDownFilters;
-import org.apache.spark.sql.sources.v2.reader.SupportsPushDownRequiredColumns;
-import org.apache.spark.sql.sources.v2.reader.SupportsScanColumnarBatch;
+import org.apache.spark.sql.sources.v2.reader.*;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.sql.vectorized.ColumnarBatch;
 import org.apache.hadoop.hive.llap.LlapInputSplit;
@@ -22,12 +18,9 @@ import scala.collection.Seq;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.Driver;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
@@ -150,16 +143,16 @@ public class HiveWarehouseDataSourceReader
     this.schema = requiredSchema;
   }
 
-  @Override public List<DataReaderFactory<ColumnarBatch>> createBatchDataReaderFactories() {
+  @Override public List<InputPartition<ColumnarBatch>> planBatchInputPartitions() {
     try {
       boolean countStar = this.schema.length() == 0;
       String queryString = getQueryString(SchemaUtil.columnNames(schema), pushedFilters);
-      List<DataReaderFactory<ColumnarBatch>> factories = new ArrayList<>();
+      List<InputPartition<ColumnarBatch>> factories = new ArrayList<>();
       if (countStar) {
         LOG.info("Executing count with query: {}", queryString);
-        factories.addAll(getCountStarFactories(queryString));
+        factories.addAll(getCountStarInputPartitions(queryString));
       } else {
-        factories.addAll(getSplitsFactories(queryString));
+        factories.addAll(getSplitsInputPartitions(queryString));
       }
       return factories;
     } catch (Exception e) {
@@ -167,15 +160,15 @@ public class HiveWarehouseDataSourceReader
     }
   }
 
-  protected List<DataReaderFactory<ColumnarBatch>> getSplitsFactories(String query) {
-    List<DataReaderFactory<ColumnarBatch>> tasks = new ArrayList<>();
+  protected List<InputPartition<ColumnarBatch>> getSplitsInputPartitions(String query) {
+    List<InputPartition<ColumnarBatch>> tasks = new ArrayList<>();
     try {
       JobConf jobConf = JobUtil.createJobConf(options, query);
       LlapBaseInputFormat llapInputFormat = new LlapBaseInputFormat(false, Long.MAX_VALUE);
       //numSplits arg not currently supported, use 1 as dummy arg
       InputSplit[] splits = llapInputFormat.getSplits(jobConf, 1);
       for (InputSplit split : splits) {
-        tasks.add(getDataReaderFactory(split, jobConf, getArrowAllocatorMax()));
+        tasks.add(getInputPartition(split, jobConf, getArrowAllocatorMax()));
       }
     } catch (IOException e) {
       LOG.error("Unable to submit query to HS2");
@@ -184,21 +177,21 @@ public class HiveWarehouseDataSourceReader
     return tasks;
   }
 
-  protected DataReaderFactory<ColumnarBatch> getDataReaderFactory(InputSplit split, JobConf jobConf, long arrowAllocatorMax) {
-    return new HiveWarehouseDataReaderFactory(split, jobConf, arrowAllocatorMax);
+  protected HiveWarehouseInputPartition getInputPartition(InputSplit split, JobConf jobConf, long arrowAllocatorMax) {
+    return new HiveWarehouseInputPartition(split, jobConf, arrowAllocatorMax);
   }
 
-  private List<DataReaderFactory<ColumnarBatch>> getCountStarFactories(String query) {
-    List<DataReaderFactory<ColumnarBatch>> tasks = new ArrayList<>(100);
+  private List<InputPartition<ColumnarBatch>> getCountStarInputPartitions(String query) {
+    List<InputPartition<ColumnarBatch>> tasks = new ArrayList<>(100);
     long count = getCount(query);
     String numTasksString = HWConf.COUNT_TASKS.getFromOptionsMap(options);
     int numTasks = Integer.parseInt(numTasksString);
     long numPerTask = count/(numTasks - 1);
     long numLastTask = count % (numTasks - 1);
     for(int i = 0; i < (numTasks - 1); i++) {
-      tasks.add(new CountDataReaderFactory(numPerTask));
+      tasks.add(new CountInputPartition(numPerTask));
     }
-    tasks.add(new CountDataReaderFactory(numLastTask));
+    tasks.add(new CountInputPartition(numLastTask));
     return tasks;
   }
 

@@ -1,36 +1,38 @@
 package com.hortonworks.spark.sql.hive.llap;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
+
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.sources.v2.DataSourceOptions;
-import org.apache.spark.sql.sources.v2.DataSourceV2;
-import org.apache.spark.sql.sources.v2.ReadSupport;
-import org.apache.spark.sql.sources.v2.WriteSupport;
-import org.apache.spark.sql.sources.v2.SessionConfigSupport;
+import org.apache.spark.sql.sources.v2.*;
 import org.apache.spark.sql.sources.v2.reader.DataSourceReader;
 import org.apache.spark.sql.sources.v2.writer.DataSourceWriter;
 import org.apache.spark.sql.types.StructType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
-
 /*
  * Driver:
- *   UserCode -> HiveWarehouseConnector -> HiveWarehouseDataSourceReader -> HiveWarehouseDataReaderFactory
+ *   UserCode -> HiveWarehouseConnector -> HiveWarehouseDataSourceReader -> HiveWarehouseInputPartition
  * Task serializer:
- *   HiveWarehouseDataReaderFactory (Driver) -> bytes -> HiveWarehouseDataReaderFactory (Executor task)
+ *   HiveWarehouseInputPartition (Driver) -> bytes -> HiveWarehouseInputPartition (Executor task)
  * Executor:
- *   HiveWarehouseDataReaderFactory -> HiveWarehouseDataReader
+ *   HiveWarehouseInputPartition -> HiveWarehouseInputPartitionReader
  */
 public class HiveWarehouseConnector implements DataSourceV2, ReadSupport, SessionConfigSupport, WriteSupport {
 
   private static Logger LOG = LoggerFactory.getLogger(HiveWarehouseConnector.class);
+
+  //one reader per instance of HiveWarehouseConnector
+  //this will be returned everytime createReader() is invoked on same HiveWarehouseConnector instance
+  //this is to avoid the problems occurred due to multiple reader initialization.
+  //http://apache-spark-user-list.1001560.n3.nabble.com/DataSourceV2-APIs-creating-multiple-instances-of-DataSourceReader-and-hence-not-preserving-the-state-tc33646.html
+  private HiveWarehouseDataSourceReader reader = null;
 
   @Override public DataSourceReader createReader(DataSourceOptions options) {
     try {
@@ -61,7 +63,10 @@ public class HiveWarehouseConnector implements DataSourceV2, ReadSupport, Sessio
   }
 
   protected DataSourceReader getDataSourceReader(Map<String, String> params) throws IOException {
-    return new HiveWarehouseDataSourceReader(params);
+    if (reader == null) {
+      reader = new HiveWarehouseDataSourceReader(params);
+    }
+    return reader;
   }
 
   protected DataSourceWriter getDataSourceWriter(String jobId, StructType schema,

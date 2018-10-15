@@ -3,14 +3,14 @@ package com.hortonworks.spark.sql.hive.llap;
 import java.util.List;
 
 import org.apache.spark.sql.catalyst.InternalRow;
+import org.apache.spark.sql.sources.v2.writer.DataSourceWriter;
 import org.apache.spark.sql.sources.v2.writer.DataWriterFactory;
-import org.apache.spark.sql.sources.v2.writer.SupportsWriteInternalRow;
 import org.apache.spark.sql.sources.v2.writer.WriterCommitMessage;
 import org.apache.spark.sql.types.StructType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HiveStreamingDataSourceWriter implements SupportsWriteInternalRow {
+public class HiveStreamingDataSourceWriter implements DataSourceWriter {
   private static Logger LOG = LoggerFactory.getLogger(HiveStreamingDataSourceWriter.class);
 
   private String jobId;
@@ -35,7 +35,7 @@ public class HiveStreamingDataSourceWriter implements SupportsWriteInternalRow {
   }
 
   @Override
-  public DataWriterFactory<InternalRow> createInternalRowWriterFactory() {
+  public DataWriterFactory<InternalRow> createWriterFactory() {
     return new HiveStreamingDataWriterFactory(jobId, schema, commitIntervalRows, db, table, partition, metastoreUri,
       metastoreKrbPrincipal);
   }

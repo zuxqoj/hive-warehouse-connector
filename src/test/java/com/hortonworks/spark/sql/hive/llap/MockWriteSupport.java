@@ -1,5 +1,9 @@
 package com.hortonworks.spark.sql.hive.llap;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import com.hortonworks.spark.sql.hive.llap.util.SerializableHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -7,20 +11,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.execution.datasources.OutputWriter;
-import org.apache.spark.sql.execution.datasources.orc.OrcOutputWriter;
 import org.apache.spark.sql.sources.v2.writer.DataWriter;
 import org.apache.spark.sql.sources.v2.writer.DataWriterFactory;
 import org.apache.spark.sql.sources.v2.writer.WriterCommitMessage;
 import org.apache.spark.sql.types.StructType;
-
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import static com.hortonworks.spark.sql.hive.llap.MockHiveWarehouseConnector.testVector;
-import static org.junit.Assert.assertEquals;
 
 public class MockWriteSupport {
 
@@ -32,7 +26,7 @@ public class MockWriteSupport {
     }
 
     @Override
-    public DataWriterFactory<InternalRow> createInternalRowWriterFactory() {
+    public DataWriterFactory<InternalRow> createWriterFactory() {
       return new MockHiveWarehouseDataWriterFactory(jobId, schema, path, new SerializableHadoopConfiguration(conf));
     }
 
@@ -48,9 +42,9 @@ public class MockWriteSupport {
     }
 
     protected DataWriter<InternalRow> getDataWriter(Configuration conf, String jobId,
-        StructType schema, int partitionId, int attemptNumber,
+        StructType schema, int partitionId, long taskId, long epochId,
         FileSystem fs, Path filePath) {
-      return new MockHiveWarehouseDataWriter(conf, jobId, schema, partitionId, attemptNumber, fs, filePath);
+      return new MockHiveWarehouseDataWriter(conf, jobId, schema, partitionId, taskId, epochId, fs, filePath);
     }
 
   }
@@ -58,8 +52,8 @@ public class MockWriteSupport {
   public static class MockHiveWarehouseDataWriter extends HiveWarehouseDataWriter {
 
     public MockHiveWarehouseDataWriter(Configuration conf, String jobId, StructType schema, int partitionId,
-        int attemptNumber, FileSystem fs, Path filePath) {
-      super(conf, jobId, schema, partitionId, attemptNumber, fs, filePath);
+        long taskId, long epochId, FileSystem fs, Path filePath) {
+      super(conf, jobId, schema, partitionId, taskId, epochId, fs, filePath);
     }
 
     @Override

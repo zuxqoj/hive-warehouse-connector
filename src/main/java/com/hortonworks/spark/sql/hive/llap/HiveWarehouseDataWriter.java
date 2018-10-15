@@ -23,17 +23,19 @@ public class HiveWarehouseDataWriter implements DataWriter<InternalRow> {
   private String jobId;
   private StructType schema;
   private int partitionId;
-  private int attemptNumber;
+  private long taskId;
+  private long epochId;
   private FileSystem fs;
   private Path filePath;
   private OutputWriter out;
 
   public HiveWarehouseDataWriter(Configuration conf, String jobId, StructType schema,
-      int partitionId, int attemptNumber, FileSystem fs, Path filePath) {
+      int partitionId, long taskId, long epochId, FileSystem fs, Path filePath) {
     this.jobId = jobId;
     this.schema = schema;
     this.partitionId = partitionId;
-    this.attemptNumber = attemptNumber;
+    this.taskId = taskId;
+    this.epochId = epochId;
     this.fs = fs;
     this.filePath = filePath;
     conf.set("orc.mapred.output.schema", this.schema.catalogString());
@@ -47,11 +49,11 @@ public class HiveWarehouseDataWriter implements DataWriter<InternalRow> {
 
   @Override public WriterCommitMessage commit() throws IOException {
     out.close();
-    return new SimpleWriterCommitMessage(String.format("COMMIT %s_%s_%s", jobId, partitionId, attemptNumber));
+    return new SimpleWriterCommitMessage(String.format("COMMIT %s_%s_%s_%s", jobId, partitionId, taskId, epochId));
   }
 
   @Override public void abort() throws IOException {
-    LOG.info("Driver sent abort for {}_{}_{}", jobId, partitionId, attemptNumber);
+    LOG.info("Driver sent abort for {}_{}_{}_{}", jobId, partitionId, taskId, epochId);
     try {
       out.close();
     } finally {

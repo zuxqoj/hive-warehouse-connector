@@ -1,34 +1,27 @@
 package com.hortonworks.spark.sql.hive.llap;
 
-import org.apache.arrow.vector.FieldVector;
-import org.apache.hadoop.hive.llap.LlapArrowBatchRecordReader;
-import org.apache.hadoop.hive.llap.LlapBaseInputFormat;
-import org.apache.hadoop.hive.llap.LlapInputSplit;
-import org.apache.hadoop.hive.ql.io.arrow.ArrowWrapperWritable;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.RecordReader;
-import org.apache.spark.sql.sources.v2.reader.DataReader;
-import org.apache.spark.sql.vectorized.ArrowColumnVector;
-import org.apache.spark.sql.vectorized.ColumnVector;
-import org.apache.spark.sql.vectorized.ColumnarBatch;
-import org.apache.spark.TaskContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.hadoop.mapreduce.TaskAttemptID;
-import org.apache.hadoop.mapreduce.TaskID;
-import org.apache.hadoop.mapreduce.JobID;
-import org.apache.hadoop.yarn.api.records.ApplicationId;
-import org.apache.hadoop.mapreduce.MRJobConfig;
-import org.apache.hadoop.hive.llap.SubmitWorkInfo;
-import org.apache.hadoop.mapreduce.TaskType;
-import org.apache.arrow.memory.BufferAllocator;
-import org.apache.hadoop.hive.ql.io.arrow.RootAllocatorFactory;
 
-public class HiveWarehouseDataReader implements DataReader<ColumnarBatch> {
+import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.vector.FieldVector;
+import org.apache.hadoop.hive.llap.LlapBaseInputFormat;
+import org.apache.hadoop.hive.llap.LlapInputSplit;
+import org.apache.hadoop.hive.llap.SubmitWorkInfo;
+import org.apache.hadoop.hive.ql.io.arrow.ArrowWrapperWritable;
+import org.apache.hadoop.hive.ql.io.arrow.RootAllocatorFactory;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.spark.TaskContext;
+import org.apache.spark.sql.sources.v2.reader.InputPartitionReader;
+import org.apache.spark.sql.vectorized.ArrowColumnVector;
+import org.apache.spark.sql.vectorized.ColumnVector;
+import org.apache.spark.sql.vectorized.ColumnarBatch;
+
+public class HiveWarehouseInputPartitionReader implements InputPartitionReader<ColumnarBatch> {
 
   private RecordReader<?, ArrowWrapperWritable> reader;
   private ArrowWrapperWritable wrapperWritable = new ArrowWrapperWritable();
@@ -41,7 +34,7 @@ public class HiveWarehouseDataReader implements DataReader<ColumnarBatch> {
   private BufferAllocator allocator;
   private String attemptId;
 
-  public HiveWarehouseDataReader(LlapInputSplit split, JobConf conf, long arrowAllocatorMax) throws Exception {
+  public HiveWarehouseInputPartitionReader(LlapInputSplit split, JobConf conf, long arrowAllocatorMax) throws Exception {
     //Set TASK_ATTEMPT_ID to submit to LlapOutputFormatService
     this.allocatorMax = arrowAllocatorMax;
     this.attemptId = getTaskAttemptID(split, conf).toString();

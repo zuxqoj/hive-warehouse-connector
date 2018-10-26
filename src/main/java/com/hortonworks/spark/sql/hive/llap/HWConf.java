@@ -19,6 +19,8 @@ package com.hortonworks.spark.sql.hive.llap;
 
 import java.util.Map;
 import java.util.Optional;
+
+import org.apache.spark.sql.RuntimeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.spark.sql.SparkSession;
@@ -55,6 +57,8 @@ public enum HWConf {
   public static final String HIVESERVER2_CREDENTIAL_ENABLED = "spark.security.credentials.hiveserver2.enabled";
   public static final String HIVESERVER2_JDBC_URL_PRINCIPAL = "spark.sql.hive.hiveserver2.jdbc.url.principal";
   public static final String HIVESERVER2_JDBC_URL = "spark.sql.hive.hiveserver2.jdbc.url";
+  //possible values - client/cluster. default - client
+  public static final String SPARK_SUBMIT_DEPLOYMODE = "spark.submit.deployMode";
 
   public void setString(HiveWarehouseSessionState state, String value) {
     state.props.put(qualifiedKey, value);
@@ -119,17 +123,24 @@ public enum HWConf {
    */
    public static String getConnectionUrlFromConf(HiveWarehouseSessionState state) {
      SparkSession sparkSession = state.session;
-     if (sparkSession.conf().get(HIVESERVER2_CREDENTIAL_ENABLED, "true").equals("true")) {
-       // 1. YARN Cluster mode for kerberized clusters
-       return format("%s;auth=delegationToken", sparkSession.conf().get(HIVESERVER2_JDBC_URL));
-     } else if (sparkSession.conf().contains(HIVESERVER2_JDBC_URL_PRINCIPAL)) {
-       // 2. YARN Client mode for kerberized clusters
-       return format("%s;principal=%s",
-           sparkSession.conf().get(HIVESERVER2_JDBC_URL),
-           sparkSession.conf().get(HIVESERVER2_JDBC_URL_PRINCIPAL));
+     RuntimeConfig conf = sparkSession.conf();
+     if ((conf.contains(HIVESERVER2_CREDENTIAL_ENABLED) && conf.get(HIVESERVER2_CREDENTIAL_ENABLED).equals("true"))
+         || conf.contains(HIVESERVER2_JDBC_URL_PRINCIPAL)) {
+       String deployMode = conf.get(SPARK_SUBMIT_DEPLOYMODE, "client");
+       LOG.debug("Getting jdbc connection url for kerberized cluster with spark.submit.deployMode = {}", deployMode);
+       if (deployMode.equals("cluster")) {
+         // 1. YARN Cluster mode for kerberized clusters
+         return format("%s;auth=delegationToken", conf.get(HIVESERVER2_JDBC_URL));
+       } else {
+         // 2. YARN Client mode for kerberized clusters
+         return format("%s;principal=%s",
+             conf.get(HIVESERVER2_JDBC_URL),
+             conf.get(HIVESERVER2_JDBC_URL_PRINCIPAL));
+       }
      } else {
+       LOG.debug("Getting jdbc connection url for non-kerberized cluster");
        // 3. For non-kerberized cluster
-       return sparkSession.conf().get(HIVESERVER2_JDBC_URL);
+       return conf.get(HIVESERVER2_JDBC_URL);
      }
    }
 

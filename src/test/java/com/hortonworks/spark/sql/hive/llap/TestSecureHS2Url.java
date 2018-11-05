@@ -19,6 +19,7 @@ public class TestSecureHS2Url extends SessionTestBase {
 
   @Test
   public void kerberizedClusterMode() {
+    session.conf().set(HWConf.SPARK_SUBMIT_DEPLOYMODE, "cluster");
     HiveWarehouseSessionState state = HiveWarehouseBuilder
         .session(session)
         .hs2url(TEST_HS2_URL)

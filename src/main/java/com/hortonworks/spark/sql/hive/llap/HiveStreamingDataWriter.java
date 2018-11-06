@@ -2,10 +2,15 @@ package com.hortonworks.spark.sql.hive.llap;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.base.Joiner;
+import com.hortonworks.spark.sql.hive.llap.util.HiveQlUtil;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.conf.MetastoreConf;
+import org.apache.hadoop.hive.ql.metadata.Table;
+import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hive.streaming.HiveStreamingConnection;
 import org.apache.hive.streaming.StreamingConnection;
 import org.apache.hive.streaming.StreamingException;
@@ -13,13 +18,14 @@ import org.apache.hive.streaming.StrictDelimitedInputWriter;
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.sources.v2.writer.DataWriter;
 import org.apache.spark.sql.sources.v2.writer.WriterCommitMessage;
+import org.apache.spark.sql.types.DataType;
+import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Joiner;
-
 public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
+  public static final Joiner RECORD_JOINER = Joiner.on(",").useForNull("");
   private static Logger LOG = LoggerFactory.getLogger(HiveStreamingDataWriter.class);
 
   private String jobId;
@@ -34,6 +40,8 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
   private long commitAfterNRows;
   private long rowsWritten = 0;
   private String metastoreKrbPrincipal;
+  private String escapeDelimiter;
+  private String quoteDelimiter;
 
   public HiveStreamingDataWriter(String jobId, StructType schema, long commitAfterNRows, int partitionId, int
     attemptNumber, String db, String table, List<String> partition, final String metastoreUri,
@@ -82,16 +90,17 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
       .withHiveConf(hiveConf)
       .withAgentInfo(jobId + "(" + partitionId + ")")
       .connect();
+    Table tableHandle = streamingConnection.getTable();
+    this.escapeDelimiter = tableHandle.getMetadata().getProperty(serdeConstants.ESCAPE_CHAR);
+    this.quoteDelimiter = tableHandle.getMetadata().getProperty(serdeConstants.QUOTE_CHAR);
     streamingConnection.beginTransaction();
     LOG.info("{} created hive streaming connection.", streamingConnection.getAgentInfo());
   }
 
   @Override
   public void write(final InternalRow record) throws IOException {
-    String delimitedRow = Joiner.on(",").useForNull("")
-      .join(scala.collection.JavaConversions.seqAsJavaList(record.toSeq(schema)));
     try {
-      streamingConnection.write(delimitedRow.getBytes(Charset.forName("UTF-8")));
+      streamingConnection.write(formatRecordForQl(record).getBytes(Charset.forName("UTF-8")));
       rowsWritten++;
       if (rowsWritten > 0 && commitAfterNRows > 0 && (rowsWritten % commitAfterNRows == 0)) {
         LOG.info("Committing transaction after rows: {}", rowsWritten);
@@ -101,6 +110,13 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
     } catch (StreamingException e) {
       throw new IOException(e);
     }
+  }
+
+  private String formatRecordForQl(InternalRow record) {
+    if (this.escapeDelimiter == null && this.quoteDelimiter == null) {
+      return RECORD_JOINER.join(scala.collection.JavaConversions.seqAsJavaList(record.toSeq(schema)));
+    }
+    return RECORD_JOINER.join(HiveQlUtil.formatRecord(schema, record, escapeDelimiter, quoteDelimiter));
   }
 
   @Override

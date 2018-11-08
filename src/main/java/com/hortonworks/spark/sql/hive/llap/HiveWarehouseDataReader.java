@@ -102,11 +102,15 @@ public class HiveWarehouseDataReader implements DataReader<ColumnarBatch> {
 
   @Override public void close() throws IOException {
     //close() single ColumnarBatch instance
-    columnarBatch.close();
+    if(this.columnarBatch != null) {
+      this.columnarBatch.close();
+    }
     //reader.close() will throw exception unless all arrow buffers have been released
     //See org.apache.hadoop.hive.llap.close()
     //See org.apache.arrow.memory.BaseAllocator.close()
-    this.reader.close();
+    if(this.reader != null) {
+      this.reader.close();
+    }
   }
 
 }

@@ -51,7 +51,7 @@ public class HiveWarehouseConnector implements DataSourceV2, ReadSupport, Sessio
     String stagingDirPrefix = HWConf.LOAD_STAGING_DIR.getFromOptionsMap(params);
     Path path = new Path(stagingDirPrefix);
     Configuration conf = SparkSession.getActiveSession().get().sparkContext().hadoopConfiguration();
-    return Optional.of(getDataSourceWriter(jobId, schema, path, params, conf));
+    return Optional.of(getDataSourceWriter(jobId, schema, path, params, conf, mode));
   }
 
   @Override public String keyPrefix() {
@@ -70,8 +70,8 @@ public class HiveWarehouseConnector implements DataSourceV2, ReadSupport, Sessio
   }
 
   protected DataSourceWriter getDataSourceWriter(String jobId, StructType schema,
-      Path path, Map<String, String> options, Configuration conf) {
-    return new HiveWarehouseDataSourceWriter(options, jobId, schema, path, conf);
+                                                 Path path, Map<String, String> options, Configuration conf, SaveMode mode) {
+    return new HiveWarehouseDataSourceWriter(options, jobId, schema, path, conf, mode);
   }
 
 }

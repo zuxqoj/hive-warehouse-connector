@@ -9,6 +9,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.execution.datasources.OutputWriter;
 import org.apache.spark.sql.sources.v2.writer.DataWriter;
@@ -21,8 +22,8 @@ public class MockWriteSupport {
   public static class MockHiveWarehouseDataSourceWriter extends HiveWarehouseDataSourceWriter {
 
     public MockHiveWarehouseDataSourceWriter(Map<String, String> options, String jobId, StructType schema, Path path,
-        Configuration conf) {
-      super(options, jobId, schema, path, conf);
+                                             Configuration conf, SaveMode mode) {
+      super(options, jobId, schema, path, conf, mode);
     }
 
     @Override

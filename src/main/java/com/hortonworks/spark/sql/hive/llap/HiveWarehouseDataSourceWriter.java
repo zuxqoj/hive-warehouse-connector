@@ -24,6 +24,7 @@ import com.hortonworks.spark.sql.hive.llap.util.SchemaUtil;
 import com.hortonworks.spark.sql.hive.llap.util.SerializableHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.sources.v2.writer.DataSourceWriter;
 import org.apache.spark.sql.sources.v2.writer.DataWriterFactory;
@@ -37,16 +38,18 @@ import static com.hortonworks.spark.sql.hive.llap.util.HiveQlUtil.loadInto;
 public class HiveWarehouseDataSourceWriter implements DataSourceWriter {
   protected String jobId;
   protected StructType schema;
+  private SaveMode mode;
   protected Path path;
   protected Configuration conf;
   protected Map<String, String> options;
   private static Logger LOG = LoggerFactory.getLogger(HiveWarehouseDataSourceWriter.class);
 
   public HiveWarehouseDataSourceWriter(Map<String, String> options, String jobId, StructType schema,
-      Path path, Configuration conf) {
+                                       Path path, Configuration conf, SaveMode mode) {
     this.options = options;
     this.jobId = jobId;
     this.schema = schema;
+    this.mode = mode;
     this.path = new Path(path, jobId);
     this.conf = conf;
   }
@@ -77,8 +80,7 @@ public class HiveWarehouseDataSourceWriter implements DataSourceWriter {
       database = tableRef.databaseName;
       table = tableRef.tableName;
       try (Connection conn = DefaultJDBCWrapper.getConnector(Option.empty(), url, user, dbcp2Configs)) {
-        createTableIfNeeded(database, table, conn);
-        DefaultJDBCWrapper.executeUpdate(conn, database, loadInto(this.path.toString(), database, table));
+        handleWriteWithSaveMode(database, table, conn);
       } catch (java.sql.SQLException e) {
         throw new RuntimeException(e);
       }
@@ -92,11 +94,51 @@ public class HiveWarehouseDataSourceWriter implements DataSourceWriter {
     }
   }
 
-  private void createTableIfNeeded(String database, String table, Connection conn) {
-    if (!DefaultJDBCWrapper.tableExists(conn, database, table)) {
-      LOG.info("Table: {} does not exist in database: {}. Creating a new one.", table, database);
+  private void handleWriteWithSaveMode(String database, String table, Connection conn) {
+    boolean tableExists = DefaultJDBCWrapper.tableExists(conn, database, table);
+    boolean createTable = false;
+    boolean loadData = false;
+    switch (mode) {
+      case ErrorIfExists:
+        if (tableExists) {
+          throw new IllegalArgumentException("Table[" + table + "] already exists, please specify a different SaveMode");
+        }
+        createTable = true;
+        loadData = true;
+        break;
+      case Append:
+        //create if table does not exist
+        //https://lists.apache.org/thread.html/40e6630f608802b31e6fdc537cf3ddbc07fe2d48c2ad51df91ae6e67@%3Cdev.spark.apache.org%3E
+        if (!tableExists) {
+          createTable = true;
+        }
+        loadData = true;
+        break;
+      case Overwrite:
+        if (tableExists) {
+          DefaultJDBCWrapper.dropTable(conn, database, table, false);
+        }
+        createTable = true;
+        loadData = true;
+        break;
+      case Ignore:
+        //NO-OP if table already exists
+        if (!tableExists) {
+          createTable = true;
+          loadData = true;
+        }
+        break;
+    }
+
+    LOG.info("Handling write: database:{}, table:{}, savemode: {}, tableExists:{}, createTable:{}, loadData:{}",
+        database, table, mode, tableExists, createTable, loadData);
+    if (createTable) {
       String createTableQuery = SchemaUtil.buildHiveCreateTableQueryFromSparkDFSchema(schema, database, table);
       DefaultJDBCWrapper.executeUpdate(conn, database, createTableQuery);
+    }
+
+    if (loadData) {
+      DefaultJDBCWrapper.executeUpdate(conn, database, loadInto(this.path.toString(), database, table));
     }
   }
 

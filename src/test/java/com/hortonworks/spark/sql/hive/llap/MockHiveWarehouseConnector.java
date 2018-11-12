@@ -46,8 +46,8 @@ public class MockHiveWarehouseConnector extends HiveWarehouseConnector {
 
   @Override
   protected DataSourceWriter getDataSourceWriter(String jobId, StructType schema,
-      Path path, Map<String, String> options, Configuration conf) {
-    return new MockWriteSupport.MockHiveWarehouseDataSourceWriter(options, jobId, schema, path, conf);
+                                                 Path path, Map<String, String> options, Configuration conf, SaveMode mode) {
+    return new MockWriteSupport.MockHiveWarehouseDataSourceWriter(options, jobId, schema, path, conf, mode);
   }
 
   public static class MockHiveWarehouseInputPartitionReader extends HiveWarehouseInputPartitionReader {

@@ -154,6 +154,18 @@ class JDBCWrapper {
     false
   }
 
+  /**
+    * Drops the table.
+    * @param conn JDBC connection
+    * @param dbName Database name
+    * @param tableName Table name
+    * @param ifExists IF EXISTS option for DROP query
+    */
+  def dropTable(conn: Connection, dbName: String, tableName: String, ifExists: Boolean): Unit = {
+    val dropTableQuery = s"DROP TABLE ${if (ifExists) "IF EXISTS " else ""}$tableName"
+    executeUpdate(conn, dbName, dropTableQuery)
+  }
+
   def populateSchemaFields(ncols: Int,
                            rsmd: ResultSetMetaData,
                            fields: Array[StructField]): Unit = {

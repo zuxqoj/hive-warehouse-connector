@@ -1,34 +1,29 @@
 package com.hortonworks.spark.sql.hive.llap;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import com.hortonworks.spark.sql.hive.llap.util.SerializableHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.execution.datasources.OutputWriter;
-import org.apache.spark.sql.execution.datasources.orc.OrcOutputWriter;
 import org.apache.spark.sql.sources.v2.writer.DataWriter;
 import org.apache.spark.sql.sources.v2.writer.DataWriterFactory;
 import org.apache.spark.sql.sources.v2.writer.WriterCommitMessage;
 import org.apache.spark.sql.types.StructType;
-
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import static com.hortonworks.spark.sql.hive.llap.MockHiveWarehouseConnector.testVector;
-import static org.junit.Assert.assertEquals;
 
 public class MockWriteSupport {
 
   public static class MockHiveWarehouseDataSourceWriter extends HiveWarehouseDataSourceWriter {
 
     public MockHiveWarehouseDataSourceWriter(Map<String, String> options, String jobId, StructType schema, Path path,
-        Configuration conf) {
-      super(options, jobId, schema, path, conf);
+                                             Configuration conf, SaveMode mode) {
+      super(options, jobId, schema, path, conf, mode);
     }
 
     @Override

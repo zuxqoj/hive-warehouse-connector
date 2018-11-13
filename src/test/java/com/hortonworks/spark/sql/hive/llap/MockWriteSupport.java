@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.hortonworks.spark.sql.hive.llap.util.SerializableHadoopConfiguration;
+import com.hortonworks.spark.sql.hive.llap.util.SparkToHiveRecordMapper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -39,13 +40,13 @@ public class MockWriteSupport {
   public static class MockHiveWarehouseDataWriterFactory extends HiveWarehouseDataWriterFactory {
 
     public MockHiveWarehouseDataWriterFactory(String jobId, StructType schema, Path path, SerializableHadoopConfiguration conf) {
-      super(jobId, schema, path, conf);
+      super(jobId, schema, path, conf, new SparkToHiveRecordMapper(schema, null));
     }
 
     protected DataWriter<InternalRow> getDataWriter(Configuration conf, String jobId,
-        StructType schema, int partitionId, int attemptNumber,
-        FileSystem fs, Path filePath) {
-      return new MockHiveWarehouseDataWriter(conf, jobId, schema, partitionId, attemptNumber, fs, filePath);
+                                                    StructType schema, int partitionId, int attemptNumber,
+                                                    FileSystem fs, Path filePath, SparkToHiveRecordMapper sparkToHiveRecordMapper) {
+      return new MockHiveWarehouseDataWriter(conf, jobId, schema, partitionId, attemptNumber, fs, filePath, sparkToHiveRecordMapper);
     }
 
   }
@@ -53,8 +54,8 @@ public class MockWriteSupport {
   public static class MockHiveWarehouseDataWriter extends HiveWarehouseDataWriter {
 
     public MockHiveWarehouseDataWriter(Configuration conf, String jobId, StructType schema, int partitionId,
-        int attemptNumber, FileSystem fs, Path filePath) {
-      super(conf, jobId, schema, partitionId, attemptNumber, fs, filePath);
+                                       int attemptNumber, FileSystem fs, Path filePath, SparkToHiveRecordMapper sparkToHiveRecordMapper) {
+      super(conf, jobId, schema, partitionId, attemptNumber, fs, filePath, sparkToHiveRecordMapper);
     }
 
     @Override

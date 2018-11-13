@@ -155,6 +155,28 @@ class JDBCWrapper {
   }
 
   /**
+    * Gets all the column names of specified table
+    *
+    * @param conn JDBC connection
+    * @param dbName Database name
+    * @param tableName Table name
+    * @return array of column names
+    */
+  def getTableColumns(conn: Connection, dbName: String, tableName: String): Array[String] = {
+    val dbMeta: DatabaseMetaData = conn.getMetaData
+    val rs: ResultSet = dbMeta.getColumns(null, dbName, tableName, null)
+    try {
+      val columns = new ArrayBuffer[String]()
+      while (rs.next()) {
+        columns += rs.getString("COLUMN_NAME")
+      }
+      columns.toArray
+    } finally {
+      rs.close()
+    }
+  }
+
+  /**
     * Drops the table.
     * @param conn JDBC connection
     * @param dbName Database name

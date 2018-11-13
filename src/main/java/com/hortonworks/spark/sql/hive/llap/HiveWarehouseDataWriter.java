@@ -1,5 +1,6 @@
 package com.hortonworks.spark.sql.hive.llap;
 
+import com.hortonworks.spark.sql.hive.llap.util.SparkToHiveRecordMapper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -28,9 +29,10 @@ public class HiveWarehouseDataWriter implements DataWriter<InternalRow> {
   private FileSystem fs;
   private Path filePath;
   private OutputWriter out;
+  private SparkToHiveRecordMapper sparkToHiveRecordMapper;
 
   public HiveWarehouseDataWriter(Configuration conf, String jobId, StructType schema,
-      int partitionId, long taskId, long epochId, FileSystem fs, Path filePath) {
+      int partitionId, long taskId, long epochId, FileSystem fs, Path filePath, SparkToHiveRecordMapper sparkToHiveRecordMapper) {
     this.jobId = jobId;
     this.schema = schema;
     this.partitionId = partitionId;
@@ -38,13 +40,14 @@ public class HiveWarehouseDataWriter implements DataWriter<InternalRow> {
     this.epochId = epochId;
     this.fs = fs;
     this.filePath = filePath;
-    conf.set("orc.mapred.output.schema", this.schema.catalogString());
+    this.sparkToHiveRecordMapper = sparkToHiveRecordMapper;
+    conf.set("orc.mapred.output.schema", sparkToHiveRecordMapper.getSchemaInHiveColumnsOrder().catalogString());
     TaskAttemptContext tac = new TaskAttemptContextImpl(conf, new TaskAttemptID());
-    this.out = getOutputWriter(filePath.toString(), schema, tac);
+    this.out = getOutputWriter(filePath.toString(), sparkToHiveRecordMapper.getSchemaInHiveColumnsOrder(), tac);
   }
 
   @Override public void write(InternalRow record) throws IOException {
-    out.write(record);
+    out.write(sparkToHiveRecordMapper.mapToHiveColumns(record));
   }
 
   @Override public WriterCommitMessage commit() throws IOException {

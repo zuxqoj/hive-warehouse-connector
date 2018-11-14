@@ -30,6 +30,7 @@ import org.apache.hadoop.security.{Credentials, UserGroupInformation}
 import org.apache.spark.SparkConf
 import org.apache.spark.deploy.yarn.security.ServiceCredentialProvider
 import org.apache.spark.internal.Logging
+import org.apache.hadoop.hive.metastore.HiveMetaStoreClient
 
 import scala.util.control.NonFatal
 
@@ -72,14 +73,19 @@ private[security] class HiveStreamingCredentialProvider extends ServiceCredentia
       logInfo(s"Getting Hive delegation token for ${currentUser.getUserName} against " +
         s"$principal at $metastoreUri")
 
+      conf.setClassLoader(getClass.getClassLoader)
       doAsRealUser {
-        val hive = Hive.get(conf, classOf[HiveConf])
-        val tokenStr = hive.getDelegationToken(currentUser.getUserName, principal)
-        val hive2Token = new Token[DelegationTokenIdentifier]()
-        hive2Token.decodeFromUrlString(tokenStr)
-        creds.addToken(hive2Token.getKind, hive2Token)
-        logInfo(s"Added delegation token (secure metastore) for hive streaming: " +
+        val hms = new HiveMetaStoreClient(conf, null, false)
+        try { 
+          val tokenStr = hms.getDelegationToken(currentUser.getUserName, principal)
+          val hive2Token = new Token[DelegationTokenIdentifier]()
+          hive2Token.decodeFromUrlString(tokenStr)
+          creds.addToken(hive2Token.getKind, hive2Token)
+          logInfo(s"Added delegation token (secure metastore) for hive streaming: " +
           s"${hive2Token.toString} alias: ${hive2Token.getKind}")
+        } finally {
+          hms.close()
+        }  
       }
 
       None
@@ -90,8 +96,6 @@ private[security] class HiveStreamingCredentialProvider extends ServiceCredentia
       case e: NoClassDefFoundError =>
         logWarning(classNotFoundErrorStr)
         None
-    } finally {
-      Hive.closeCurrent()
     }
 
     None

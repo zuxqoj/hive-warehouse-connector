@@ -88,17 +88,19 @@ private[security] class HiveStreamingCredentialProvider extends ServiceCredentia
         }  
       }
 
-      None
     } catch {
       case NonFatal(e) =>
         logInfo(s"Failed to get token from service $serviceName", e)
-        None
       case e: NoClassDefFoundError =>
         logWarning(classNotFoundErrorStr)
-        None
     }
 
-    None
+    val checkInterval = sparkConf.getLong("spark.datasource.hive.warehouse.metastore.delegation.interval", 0)
+    if(checkInterval == 0) {
+      None
+    } else {
+      Some(System.currentTimeMillis() + checkInterval)
+    }
   }
 
   /**

@@ -83,7 +83,12 @@ private[security] class HiveServer2CredentialProvider extends ServiceCredentialP
       }
     }
 
-    None
+    val checkInterval = sparkConf.getLong("spark.datasource.hive.warehouse.hiveserver.delegation.interval", 0)
+    if(checkInterval == 0) {
+      None
+    } else {
+      Some(System.currentTimeMillis() + checkInterval)
+    }
   }
 
   /**

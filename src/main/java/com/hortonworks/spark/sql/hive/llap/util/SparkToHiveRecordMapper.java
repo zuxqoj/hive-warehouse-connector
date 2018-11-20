@@ -26,14 +26,16 @@ import java.util.stream.IntStream;
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow;
 import org.apache.spark.sql.types.StructType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * -Provides methods to map a sparkDF record({@link InternalRow}) to hive table(in the sequence of hive table columns)
- * -Ensures dataframe columns are isomorphic to hive columns, throws otherwise.
  */
 public class SparkToHiveRecordMapper implements Serializable {
 
   private static final long serialVersionUID = -5213255591548912610L;
+  private static final Logger LOG = LoggerFactory.getLogger(SparkToHiveRecordMapper.class);
 
   private StructType schemaInHiveColumnsOrder;
   private int[] mapping;
@@ -72,9 +74,11 @@ public class SparkToHiveRecordMapper implements Serializable {
   }
 
   /**
-   * Builds mapping between sparkDF columns to hive columns.
+   * Builds mapping between sparkDF columns to hive columns and sets recordReorderingNeeded flag if
+   * all the column names of dataframe are present in hive table and their order is different
+   * <p>
    * <br/>
-   * Eg: If schemaInHiveColumnsOrder is [3,2,0,1], this implies that
+   * Eg: If mapping is [3,2,0,1], this implies that
    * <br/>Spark DF column ----corresponds to -----> Hive column
    * <br/>    0                                      3
    * <br/>    1                                      2
@@ -82,41 +86,34 @@ public class SparkToHiveRecordMapper implements Serializable {
    * <br/>    3                                      1
    */
   private void resolveBasedOnColumnNames(String[] hiveTableColumns) {
-    //this will be the case, when table does not exist
-    if (hiveTableColumns == null) {
-      return;
-    }
-
     String[] dataframeColumns = sparkDFSchema.fieldNames();
-    if (hiveTableColumns.length != dataframeColumns.length) {
-      throw new IllegalArgumentException("Number of columns in specified hive table and given dataframe do not" +
-          " match, ensure that dataframe has all the columns same as to that of your hive table");
-    }
+    if (hiveTableColumns != null && hiveTableColumns.length == dataframeColumns.length) {
+      Map<String, Integer> hiveColumnIndexMapping = IntStream.range(0, hiveTableColumns.length)
+          .boxed()
+          .collect(Collectors.toMap(i -> hiveTableColumns[i], Function.identity()));
 
-    Map<String, Integer> hiveColumnIndexMapping = IntStream.range(0, hiveTableColumns.length)
-        .boxed()
-        .collect(Collectors.toMap(i -> hiveTableColumns[i], Function.identity()));
-
-    this.mapping = new int[hiveTableColumns.length];
-    Integer hiveColIndex;
-    for (int i = 0; i < dataframeColumns.length; i++) {
-      if ((hiveColIndex = hiveColumnIndexMapping.get(dataframeColumns[i])) == null) {
-        throw new IllegalArgumentException("Dataframe column: " + dataframeColumns[i] +
-            " does not exist in specified hive table");
+      this.mapping = new int[hiveTableColumns.length];
+      Integer hiveColIndex;
+      for (int i = 0; i < dataframeColumns.length; i++) {
+        //some column in dataframe is not in hive, we cannot go for reordering, hence reset recordReorderingNeeded
+        if ((hiveColIndex = hiveColumnIndexMapping.get(dataframeColumns[i])) == null) {
+          this.recordReorderingNeeded = false;
+          break;
+        }
+        this.mapping[i] = hiveColIndex;
+        //i.e. sequence of columns in df is different to that of hive columns, we will need to reorder
+        if (i != hiveColIndex) {
+          this.recordReorderingNeeded = true;
+        }
       }
-      this.mapping[i] = hiveColIndex;
-      //i.e. sequence of columns in df is different to that of hive columns, we will need to reorder
-      if (i != hiveColIndex) {
-        this.recordReorderingNeeded = true;
-      }
-    }
-    //if reordering is needed, reorder schema as well...as later it is passed to OrcOutputWriter
-    if (this.recordReorderingNeeded) {
-      this.schemaInHiveColumnsOrder = new StructType();
-      for (String hiveTableColumn : hiveTableColumns) {
-        this.schemaInHiveColumnsOrder = this.schemaInHiveColumnsOrder.add(sparkDFSchema.fields()[sparkDFSchema.fieldIndex(hiveTableColumn)]);
+      //if reordering is needed, reorder schema as well...as later it is passed to OrcOutputWriter
+      if (this.recordReorderingNeeded) {
+        this.schemaInHiveColumnsOrder = new StructType();
+        for (String hiveTableColumn : hiveTableColumns) {
+          this.schemaInHiveColumnsOrder = this.schemaInHiveColumnsOrder.add(sparkDFSchema.fields()[sparkDFSchema.fieldIndex(hiveTableColumn)]);
+        }
       }
     }
+    LOG.info("Need to reorder/rearrange DF columns to match hive columns order: {}", this.recordReorderingNeeded);
   }
-
 }

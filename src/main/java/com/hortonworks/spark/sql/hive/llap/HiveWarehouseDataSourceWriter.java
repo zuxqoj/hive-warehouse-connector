@@ -48,24 +48,14 @@ import static com.hortonworks.spark.sql.hive.llap.util.HiveQlUtil.loadInto;
  * <br/>
  * <br/>
  * 2) <b>Dataframe Schema and Hive Table Schema:</b>
- * While trying to write record to hive table, if dataframe contains all the columns in same order as they are present
- * in hive table then they are written right away to table without any manipulation in record.
  * <br/>
- * However if the order of dataframe columns and hive table column do not match then writer will try to rearrange fields(columns)
- * of record in the order respective columns are present in hive.
+ * Writer will try to rearrange fields of dataframe in the same order as hive table columns if following conditions hold:
  * <br/>
- * While rearranging, if table already exists and savemode is not {@link SaveMode#Overwrite}, following conditions apply:
+ * 2.1) Specified table exists in hive and specified savemode is not {@link SaveMode#Overwrite}
  * <br/>
- * 2.1)An {@link IllegalArgumentException} is thrown when:
+ * 2.2) All the column names in dataframe are identical to those of hive table.
  * <br/>
- * 2.1.1)Number of columns in dataframe are not equal to those in hive table.
- * <br/>
- * 2.1.2)Some dataframe column does not exist in hive table.
- * <br/>
- * which effectively means that all the columns of hive table must be present in dataframe in some order and vice-versa.
- * <br/>
- * However the same column order is recommended for more efficient writing.
- * <br/>
+ * 2.3) Order of columns in dataframe is different to that of in hive table.
  */
 public class HiveWarehouseDataSourceWriter implements DataSourceWriter {
   protected String jobId;

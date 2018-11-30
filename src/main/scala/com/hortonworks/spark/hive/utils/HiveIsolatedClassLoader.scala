@@ -24,6 +24,8 @@ import org.apache.spark.internal.Logging
 
 object HiveIsolatedClassLoader extends Logging {
 
+  var hiveLoader = None: Option[HiveIsolatedClassLoader]
+
   def isolatedClassLoader(): ClassLoader = {
     val parentClassLoader = Option(Thread.currentThread().getContextClassLoader)
       .getOrElse(getClass.getClassLoader)
@@ -59,7 +61,10 @@ object HiveIsolatedClassLoader extends Logging {
     }
 
     val urls = getAddedURLs(parentClassLoader)
-    new HiveIsolatedClassLoader(urls, parentClassLoader)
+    if(hiveLoader.isEmpty) {
+      hiveLoader = Some(new HiveIsolatedClassLoader(urls, parentClassLoader))
+    }
+    hiveLoader.get
   }
 }
 

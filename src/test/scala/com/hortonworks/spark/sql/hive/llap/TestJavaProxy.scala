@@ -80,13 +80,6 @@ class TestJavaProxy extends FunSuite {
     withSetUpAndTearDown(test, test.testMapToHiveColumns)
     withSetUpAndTearDown(test, test.testMapToHiveColumnsWithRightSequence)
     withSetUpAndTearDown(test, test.testMapToHiveColumnsWithHiveColumnsNull)
-  }
-
-  test("SparkToHiveRecordMapperTest") {
-    val test = new SparkToHiveRecordMapperTest()
-    withSetUpAndTearDown(test, test.testMapToHiveColumns)
-    withSetUpAndTearDown(test, test.testMapToHiveColumnsWithRightSequence)
-    withSetUpAndTearDown(test, test.testMapToHiveColumnsWithHiveColumnsNull)
     withSetUpAndTearDown(test, test.testWithDifferentColumnsInDF)
     withSetUpAndTearDown(test, test.testWithDifferentNumberOfColsInHiveAndDF)
   }

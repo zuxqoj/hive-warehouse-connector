@@ -17,6 +17,7 @@
 
 package com.hortonworks.spark.sql.hive.llap;
 
+import com.hortonworks.hwc.MergeBuilder;
 import com.hortonworks.spark.sql.hive.llap.util.HiveQlUtil;
 import com.hortonworks.spark.sql.hive.llap.util.TriFunction;
 import org.apache.spark.SparkConf;
@@ -145,6 +146,10 @@ public class HiveWarehouseSessionImpl implements com.hortonworks.hwc.HiveWarehou
     return new CreateTableBuilder(this, DEFAULT_DB.getString(sessionState), tableName);
   }
 
+  @Override
+  public MergeBuilder mergeBuilder() {
+    return new MergeBuilderImpl(this, DEFAULT_DB.getString(sessionState));
+  }
 
 }
 

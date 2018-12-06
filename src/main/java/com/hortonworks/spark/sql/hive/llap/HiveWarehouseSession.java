@@ -17,6 +17,7 @@
 
 package com.hortonworks.spark.sql.hive.llap;
 
+import com.hortonworks.hwc.MergeBuilder;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -50,6 +51,8 @@ public interface HiveWarehouseSession {
     void createDatabase(String database, boolean ifNotExists);
 
     CreateTableBuilder createTable(String tableName);
+
+    MergeBuilder mergeBuilder();
 
     void dropDatabase(String database, boolean ifExists, boolean cascade);
 

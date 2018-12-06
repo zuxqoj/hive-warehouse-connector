@@ -17,6 +17,7 @@
 
 package com.hortonworks.spark.sql.hive.llap;
 
+import com.hortonworks.hwc.MergeBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -111,4 +112,39 @@ class HiveWarehouseSessionHiveQlTest extends SessionTestBase {
           .create();
     }
 
+    @Test
+    void testMergeBuilder() {
+        MergeBuilder mergeBuilder = hive.mergeBuilder();
+        mergeBuilder.mergeInto("target_table", "t")
+            .using("source_table", "s")
+            .on("t.id = s.id")
+            .whenMatchedThenUpdate("t.col1 = s.col1", "col2=s.col2", "col3=s.col3")
+            .whenMatchedThenDelete("t.col4 = s.col4")
+            .whenNotMatchedInsert("t.col1 != s.col1", "s.col1", "s.col2", "s.col3", "s.col4")
+            .merge();
+    }
+
+    @Test
+    void testMergeBuilderWithSourceExpression() {
+        MergeBuilder mergeBuilder = hive.mergeBuilder();
+        mergeBuilder.mergeInto("target_table", "t")
+            .using("(select * from source_table)", "s")
+            .on("t.id = s.id")
+            .whenMatchedThenUpdate("t.col1 = s.col1", "col2=s.col2", "col3=s.col3")
+            .whenMatchedThenDelete("t.col4 = s.col4")
+            .whenNotMatchedInsert("t.col1 != s.col1", "s.col1", "s.col2", "s.col3", "s.col4")
+            .merge();
+    }
+
+    @Test
+    void testMergeBuilderWithoutMatchExpressions() {
+        MergeBuilder mergeBuilder = hive.mergeBuilder();
+        mergeBuilder.mergeInto("target_table", "t")
+            .using("source_table", "s")
+            .on("t.id = s.id")
+            .whenMatchedThenUpdate(null, "col2=s.col2", "col3=s.col3")
+            .whenMatchedThenDelete(null)
+            .whenNotMatchedInsert(null, "s.col1", "s.col2", "s.col3", "s.col4")
+            .merge();
+    }
 }

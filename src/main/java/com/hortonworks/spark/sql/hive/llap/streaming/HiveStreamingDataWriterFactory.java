@@ -102,17 +102,17 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
     queue.add(root);
     while (!queue.isEmpty()) {
       Path current = queue.poll();
-      if (current.getName().equals(dirName)) {
-        try {
-          fs.delete(current, true);
-          LOG.info("Directory " + current + " deleted because it was a dirty file from a previous failed task.");
-        } catch (FileNotFoundException e) {
-          LOG.warn("File " + current.getName() + " not found while deleting dirty files");
+      try {
+        if (current.getName().equals(dirName)) {
+            fs.delete(current, true);
+            LOG.info("Directory " + current + " deleted because it was a dirty file from a previous failed task.");
+        } else {
+          for (FileStatus fileStatus: fs.listStatus(current)) {
+            queue.add(fileStatus.getPath());
+          }
         }
-      } else {
-        for (FileStatus fileStatus: fs.listStatus(current)) {
-          queue.add(fileStatus.getPath());
-        }
+      } catch (FileNotFoundException e) {
+        LOG.warn("File " + current.getName() + " not found while deleting dirty files");
       }
     }
   }

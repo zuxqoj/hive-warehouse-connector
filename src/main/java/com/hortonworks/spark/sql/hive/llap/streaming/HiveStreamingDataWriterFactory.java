@@ -2,10 +2,13 @@ package com.hortonworks.spark.sql.hive.llap.streaming;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 import com.hortonworks.spark.hive.utils.SerializableHiveConfiguration;
 import com.hortonworks.spark.sql.hive.llap.util.JobUtil;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
@@ -91,14 +94,24 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
 
     String deltaDirName = AcidUtils.deltaSubdir(writeId, writeId, statementId);
 
-    RemoteIterator<LocatedFileStatus> files = fs.listFiles(root, true);
-    while(files.hasNext()){
-      LocatedFileStatus fileStatus = files.next();
-      if (fileStatus.getPath().getName().equals(deltaDirName)) {
+    deleteDirectories(root, deltaDirName, fs);
+  }
+
+  private void deleteDirectories(Path root, String dirName, FileSystem fs) throws IOException {
+    Queue<Path> queue = new LinkedList<>();
+    queue.add(root);
+    while (!queue.isEmpty()) {
+      Path current = queue.poll();
+      if (current.getName().equals(dirName)) {
         try {
-          fs.delete(fileStatus.getPath(), true);
+          fs.delete(current, true);
+          LOG.info("Directory " + current + " deleted because it was a dirty file from a previous failed task.");
         } catch (FileNotFoundException e) {
-          LOG.warn("File " + fileStatus.getPath() + " not found while deleting dirty files");
+          LOG.warn("File " + current.getName() + " not found while deleting dirty files");
+        }
+      } else {
+        for (FileStatus fileStatus: fs.listStatus(current)) {
+          queue.add(fileStatus.getPath());
         }
       }
     }

@@ -26,7 +26,6 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
   private final int partitionId;
   private final int attemptNumber;
   private final HiveStreamingConnection streamingConnection;
-  private final HiveConf hiveConf;
 
   private final double chanceExceptionBeforeCommit;
   private final double chanceExceptionAfterCommit;
@@ -41,7 +40,6 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
     this.partitionId = partitionId;
     this.attemptNumber = attemptNumber;
     this.streamingConnection = connection;
-    this.hiveConf = hiveConf;
 
     chanceExceptionBeforeCommit = hiveConf.getDouble(
         HiveStreamingDataSourceWriter.EXCEPTION_PROBABILITY_BEFORE_COMMIT,

@@ -48,6 +48,7 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
     this.partition = partition;
     this.writeId = writeId;
     this.conf = new SerializableConfiguration(conf);
+    LOG.info("test.exception.probability.beforecommit: " + conf.get("test.exception.probability.beforecommit"));
   }
 
   @Override

@@ -74,9 +74,7 @@ public class HiveStreamingDataSourceWriter implements SupportsWriteInternalRow, 
       throw new RuntimeException("Unable to start the transaction manager", e);
     }
     streamingDataWriterFactory = new HiveStreamingDataWriterFactory(conf, jobId,
-        schema, db, transactionManager.getTable(),
-        partition, metastoreUri, metastoreKerberosPrincipal,
-        transactionManager.getWriteId());
+        schema, db, transactionManager.getTable(), partition, transactionManager.getWriteId());
     // for the streaming case, commit transaction happens on task commit() (atleast-once), so interval is set to -1
     return streamingDataWriterFactory;
   }

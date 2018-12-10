@@ -34,23 +34,18 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
   private String db;
   private Table table;
   private List<String> partition;
-  private String metastoreUri;
-  private String metastoreKrbPrincipal;
   private Long writeId;
   private final SerializableConfiguration conf;
   private static Logger LOG = LoggerFactory.getLogger(HiveStreamingDataWriterFactory.class);
 
   public HiveStreamingDataWriterFactory(HiveConf conf,
       String jobId, StructType schema, String db,
-      Table table, List<String> partition, final String metastoreUri,
-      final String metastoreKrbPrincipal, Long writeId) {
+      Table table, List<String> partition, Long writeId) {
     this.jobId = jobId;
     this.schema = schema;
     this.db = db;
     this.table = table;
     this.partition = partition;
-    this.metastoreUri = metastoreUri;
-    this.metastoreKrbPrincipal = metastoreKrbPrincipal;
     this.writeId = writeId;
     this.conf = new SerializableConfiguration(conf);
   }
@@ -78,7 +73,8 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
       } catch (StreamingException e) {
         throw new RuntimeException("Unable to create hive streaming connection", e);
       }
-      return new HiveStreamingDataWriter(jobId, schema, partitionId, attemptNumber, streamingConnection);
+      return new HiveStreamingDataWriter((HiveConf) conf.value(), jobId,
+          schema, partitionId, attemptNumber, streamingConnection);
     } finally {
       Thread.currentThread().setContextClassLoader(restoredClassloader);
     }

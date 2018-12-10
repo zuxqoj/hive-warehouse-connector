@@ -4,8 +4,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
+import com.hortonworks.spark.hive.utils.SerializableHiveConfiguration;
 import com.hortonworks.spark.sql.hive.llap.util.JobUtil;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
@@ -23,7 +23,6 @@ import org.apache.spark.sql.sources.v2.writer.DataWriterFactory;
 import org.apache.spark.sql.types.StructType;
 
 import com.hortonworks.spark.hive.utils.HiveIsolatedClassLoader;
-import org.apache.spark.util.SerializableConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +34,7 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
   private Table table;
   private List<String> partition;
   private Long writeId;
-  private final SerializableConfiguration conf;
+  private final SerializableHiveConfiguration conf;
   private static Logger LOG = LoggerFactory.getLogger(HiveStreamingDataWriterFactory.class);
 
   public HiveStreamingDataWriterFactory(HiveConf conf,
@@ -47,7 +46,7 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
     this.table = table;
     this.partition = partition;
     this.writeId = writeId;
-    this.conf = new SerializableConfiguration(conf);
+    this.conf = new SerializableHiveConfiguration(conf);
     LOG.info("test.exception.probability.beforecommit: " + conf.get("test.exception.probability.beforecommit"));
   }
 
@@ -74,7 +73,7 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
       } catch (StreamingException e) {
         throw new RuntimeException("Unable to create hive streaming connection", e);
       }
-      return new HiveStreamingDataWriter((HiveConf) conf.value(), jobId,
+      return new HiveStreamingDataWriter(conf.value(), jobId,
           schema, partitionId, attemptNumber, streamingConnection);
     } finally {
       Thread.currentThread().setContextClassLoader(restoredClassloader);

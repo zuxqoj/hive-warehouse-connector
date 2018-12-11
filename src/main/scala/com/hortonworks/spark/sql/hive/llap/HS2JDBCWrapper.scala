@@ -19,7 +19,7 @@ package com.hortonworks.spark.sql.hive.llap
 
 import java.net.URI
 import java.sql.{Connection, DatabaseMetaData, Driver, DriverManager, ResultSet, ResultSetMetaData, SQLException}
-import java.util.Properties
+import java.util.{Properties, StringJoiner}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
@@ -188,6 +188,25 @@ class JDBCWrapper {
     executeUpdate(conn, dbName, dropTableQuery)
   }
 
+  /**
+    * Unsets table properties.
+    * @param conn JDBC connection
+    * @param dbName Database name
+    * @param tableName Table name
+    * @param ifExists IF EXISTS option, i.e. UNSET TBLPROPERTIES IF EXISTS...
+    * @param propertyKeys property keys to unset
+    */
+  @annotation.varargs
+  def unsetTableProperties(conn: Connection, dbName: String, tableName: String, ifExists: Boolean,
+                           propertyKeys: String*): Unit = {
+    val joiner = new StringJoiner(",", "'", "'")
+    propertyKeys.foreach(key => joiner.add(key))
+    val query = s"ALTER TABLE $tableName UNSET TBLPROPERTIES" +
+      s" ${if (ifExists) "IF EXISTS " else ""}($joiner)"
+
+    executeUpdate(conn, dbName, query, throwOnException = true)
+  }
+
   def populateSchemaFields(ncols: Int,
                            rsmd: ResultSetMetaData,
                            fields: Array[StructField]): Unit = {
@@ -247,8 +266,8 @@ class JDBCWrapper {
   // with no results
   // Useful for DDL statements like 'create table'
   def executeUpdate(conn: Connection,
-                    currentDatabase: String,
-                    query: String): Boolean = {
+                  currentDatabase: String,
+                  query: String): Boolean = {
     executeUpdate(conn, currentDatabase, query, throwOnException = false)
   }
 

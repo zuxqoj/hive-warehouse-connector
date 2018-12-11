@@ -2,9 +2,11 @@ package com.hortonworks.spark.sql.hive.llap.streaming;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 
 import com.hortonworks.spark.hive.utils.SerializableHiveConfiguration;
 import com.hortonworks.spark.sql.hive.llap.util.JobUtil;
@@ -50,7 +52,6 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
     this.partition = partition;
     this.writeId = writeId;
     this.conf = new SerializableHiveConfiguration(conf);
-    LOG.info("test.exception.probability.beforecommit: " + conf.get("test.exception.probability.beforecommit"));
   }
 
   @Override
@@ -99,15 +100,22 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
 
   private void deleteDirectories(Path root, String dirName, FileSystem fs) throws IOException {
     Queue<Path> queue = new LinkedList<>();
+    Set<Path> seen = new HashSet<>();
     queue.add(root);
     while (!queue.isEmpty()) {
       Path current = queue.poll();
+      LOG.info("Current is: " + current);
+      if (seen.contains(current)) {
+        continue;
+      }
+      // seen.add(current);
       try {
         if (current.getName().equals(dirName)) {
             fs.delete(current, true);
             LOG.info("Directory " + current + " deleted because it was a dirty file from a previous failed task.");
         } else {
           for (FileStatus fileStatus: fs.listStatus(current)) {
+            LOG.info("Adding: " + fileStatus.getPath());
             queue.add(fileStatus.getPath());
           }
         }
@@ -129,7 +137,7 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
         .withWriteId(writeId)
         .withStaticPartitionValues(partition)
         .withRecordWriter(strictDelimitedInputWriter)
-        .withHiveConf((HiveConf) conf.value())
+        .withHiveConf(conf.value())
         .withAgentInfo(JobUtil.createAgentInfo(jobId, partitionId))
         .withStatementId(partitionId)
         .connect();

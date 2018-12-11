@@ -79,4 +79,6 @@ public interface HiveWarehouseSession {
     void dropDatabase(String database, boolean ifExists, boolean cascade);
 
     void dropTable(String table, boolean ifExists, boolean purge);
+
+    void cleanUpStreamingMeta(String checkpointLocation, String queryId, String tableName);
 }

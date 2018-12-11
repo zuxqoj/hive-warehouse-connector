@@ -104,9 +104,6 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
     while (!queue.isEmpty()) {
       Path current = queue.poll();
       LOG.info("Current is: " + current);
-      if (seen.contains(current)) {
-        continue;
-      }
       try {
         if (current.getName().equals(dirName)) {
             fs.delete(current, true);

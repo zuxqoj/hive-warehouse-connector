@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 import com.hortonworks.spark.sql.hive.llap.transaction.TransactionException;
 import com.hortonworks.spark.sql.hive.llap.transaction.TransactionManager;
@@ -24,10 +25,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HiveStreamingDataSourceWriter implements SupportsWriteInternalRow, StreamWriter {
-  public static final String EXCEPTION_PROBABILITY_BEFORE_COMMIT = "test.exception.probability.beforecommit";
-  public static final float EXCEPTION_PROBABILITY_BEFORE_COMMIT_DEFAULT = 0;
-  public static final String EXCEPTION_PROBABILITY_AFTER_COMMIT = "test.exception.probability.aftercommit";
-  public static final float EXCEPTION_PROBABILITY_AFTER_COMMIT_DEFAULT = 0;
+  public static final String TASK_EXCEPTION_PROBABILITY_BEFORE_COMMIT = "test.task.exception.probability.beforecommit";
+  public static final float TASK_EXCEPTION_PROBABILITY_BEFORE_COMMIT_DEFAULT = 0;
+  public static final String TASK_EXCEPTION_PROBABILITY_AFTER_COMMIT = "test.task.exception.probability.aftercommit";
+  public static final float TASK_EXCEPTION_PROBABILITY_AFTER_COMMIT_DEFAULT = 0;
+
+  public static final String DRIVER_EXCEPTION_PROBABILITY_BEFORE_COMMIT = "test.driver.exception.probability.beforecommit";
+  public static final float DRIVER_EXCEPTION_PROBABILITY_BEFORE_COMMIT_DEFAULT = 0;
+  public static final String DRIVER_EXCEPTION_PROBABILITY_AFTER_COMMIT = "test.driver.exception.probability.aftercommit";
+  public static final float DRIVER_EXCEPTION_PROBABILITY_AFTER_COMMIT_DEFAULT = 0;
 
   private static Logger LOG = LoggerFactory.getLogger(HiveStreamingDataSourceWriter.class);
 
@@ -42,6 +48,10 @@ public class HiveStreamingDataSourceWriter implements SupportsWriteInternalRow, 
   private TransactionManager transactionManager;
   private HiveConf conf;
   private final DataSourceOptions options;
+
+  private final double chanceExceptionBeforeCommit;
+  private final double chanceExceptionAfterCommit;
+  private final Random random;
 
   public HiveStreamingDataSourceWriter(String jobId, StructType schema,
       final DataSourceOptions options) {
@@ -62,6 +72,20 @@ public class HiveStreamingDataSourceWriter implements SupportsWriteInternalRow, 
     this.transactionManager = new TransactionManager(jobId, conf, db,
         tableName, partition, options);
     this.options = options;
+
+    chanceExceptionBeforeCommit = options.getDouble(
+        HiveStreamingDataSourceWriter.DRIVER_EXCEPTION_PROBABILITY_BEFORE_COMMIT,
+        HiveStreamingDataSourceWriter.DRIVER_EXCEPTION_PROBABILITY_BEFORE_COMMIT_DEFAULT);
+
+    chanceExceptionAfterCommit = options.getDouble(
+        HiveStreamingDataSourceWriter.DRIVER_EXCEPTION_PROBABILITY_AFTER_COMMIT,
+        HiveStreamingDataSourceWriter.DRIVER_EXCEPTION_PROBABILITY_AFTER_COMMIT_DEFAULT);
+
+    if (chanceExceptionBeforeCommit > 0 || chanceExceptionAfterCommit > 0) {
+      random = new Random();
+    } else {
+      random = null;
+    }
   }
 
   @Override
@@ -92,6 +116,13 @@ public class HiveStreamingDataSourceWriter implements SupportsWriteInternalRow, 
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    if (chanceExceptionBeforeCommit > 0) {
+      if (random.nextDouble() < chanceExceptionBeforeCommit) {
+        throw new RuntimeException("Exception thrown in driver for testing purposes. "
+            + "This should never happen outside of a testing environment, "
+            + "chanceExceptionBeforeCommit=" + chanceExceptionBeforeCommit);
+      }
+    }
     try {
       transactionManager.checkForRunningJobs(id);
       if (!transactionManager.isEpochIdCommitted(id, epochId)) {
@@ -108,6 +139,15 @@ public class HiveStreamingDataSourceWriter implements SupportsWriteInternalRow, 
     } catch ( SQLException | TransactionException | StreamingException e) {
       throw new RuntimeException(e);
     }
+
+    if (chanceExceptionAfterCommit > 0) {
+      if (random.nextDouble() < chanceExceptionAfterCommit) {
+        throw new RuntimeException("Exception thrown in driver for testing purposes. "
+            + "This should never happen outside of a testing environment, "
+            + "chanceExceptionAfterCommit=" + chanceExceptionAfterCommit);
+      }
+    }
+
     transactionManager.close();
   }
 

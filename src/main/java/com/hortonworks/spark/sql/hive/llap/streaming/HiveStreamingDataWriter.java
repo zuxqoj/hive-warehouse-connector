@@ -5,7 +5,6 @@ import java.nio.charset.Charset;
 import java.util.Random;
 
 import com.hortonworks.spark.sql.hive.llap.StreamingWriterCommitMessage;
-import com.hortonworks.spark.sql.hive.llap.util.JobUtil;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hive.streaming.HiveStreamingConnection;
 import org.apache.hive.streaming.StreamingException;
@@ -42,12 +41,12 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
     this.streamingConnection = connection;
 
     chanceExceptionBeforeCommit = hiveConf.getDouble(
-        HiveStreamingDataSourceWriter.EXCEPTION_PROBABILITY_BEFORE_COMMIT,
-        HiveStreamingDataSourceWriter.EXCEPTION_PROBABILITY_BEFORE_COMMIT_DEFAULT);
+        HiveStreamingDataSourceWriter.TASK_EXCEPTION_PROBABILITY_BEFORE_COMMIT,
+        HiveStreamingDataSourceWriter.TASK_EXCEPTION_PROBABILITY_BEFORE_COMMIT_DEFAULT);
 
     chanceExceptionAfterCommit = hiveConf.getDouble(
-        HiveStreamingDataSourceWriter.EXCEPTION_PROBABILITY_AFTER_COMMIT,
-        HiveStreamingDataSourceWriter.EXCEPTION_PROBABILITY_AFTER_COMMIT_DEFAULT);
+        HiveStreamingDataSourceWriter.TASK_EXCEPTION_PROBABILITY_AFTER_COMMIT,
+        HiveStreamingDataSourceWriter.TASK_EXCEPTION_PROBABILITY_AFTER_COMMIT_DEFAULT);
 
     if (chanceExceptionBeforeCommit > 0 || chanceExceptionAfterCommit > 0) {
       random = new Random();
@@ -72,7 +71,7 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
   public WriterCommitMessage commit() throws IOException {
     if (chanceExceptionBeforeCommit > 0) {
       if (random.nextDouble() < chanceExceptionBeforeCommit) {
-        throw new RuntimeException("Exception thrown for testing purposes. "
+        throw new RuntimeException("Exception thrown for in task testing purposes. "
             + "This should never happen outside of a testing environment, "
             + "chanceExceptionBeforeCommit=" + chanceExceptionBeforeCommit);
       }
@@ -85,7 +84,7 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
 
     if (chanceExceptionAfterCommit > 0) {
       if (random.nextDouble() < chanceExceptionAfterCommit) {
-        throw new RuntimeException("Exception thrown for testing purposes. "
+        throw new RuntimeException("Exception thrown in task for testing purposes. "
             + "This should never happen outside of a testing environment, "
             + "chanceExceptionAfterCommit=" + chanceExceptionAfterCommit);
       }

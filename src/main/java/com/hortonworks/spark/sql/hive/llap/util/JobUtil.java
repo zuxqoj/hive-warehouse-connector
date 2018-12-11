@@ -1,8 +1,6 @@
 package com.hortonworks.spark.sql.hive.llap.util;
 
 import com.hortonworks.spark.sql.hive.llap.HWConf;
-import com.hortonworks.spark.sql.hive.llap.HiveWarehouseDataSourceReader;
-import com.hortonworks.spark.sql.hive.llap.Utils;
 import com.hortonworks.spark.sql.hive.llap.streaming.HiveStreamingDataSourceWriter;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.conf.MetastoreConf;
@@ -11,7 +9,6 @@ import org.apache.spark.SparkContext;
 
 import java.sql.Driver;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
@@ -113,12 +110,12 @@ public class JobUtil {
     if (metastoreKrbPrincipal != null) {
       hiveConf.set(MetastoreConf.ConfVars.KERBEROS_PRINCIPAL.getHiveName(), metastoreKrbPrincipal);
     }
-    hiveConf.setDouble(HiveStreamingDataSourceWriter.EXCEPTION_PROBABILITY_BEFORE_COMMIT,
-        options.getDouble(HiveStreamingDataSourceWriter.EXCEPTION_PROBABILITY_BEFORE_COMMIT,
-            HiveStreamingDataSourceWriter.EXCEPTION_PROBABILITY_BEFORE_COMMIT_DEFAULT));
-    hiveConf.setDouble(HiveStreamingDataSourceWriter.EXCEPTION_PROBABILITY_AFTER_COMMIT,
-        options.getDouble(HiveStreamingDataSourceWriter.EXCEPTION_PROBABILITY_AFTER_COMMIT,
-            HiveStreamingDataSourceWriter.EXCEPTION_PROBABILITY_AFTER_COMMIT_DEFAULT));
+    hiveConf.setDouble(HiveStreamingDataSourceWriter.TASK_EXCEPTION_PROBABILITY_BEFORE_COMMIT,
+        options.getDouble(HiveStreamingDataSourceWriter.TASK_EXCEPTION_PROBABILITY_BEFORE_COMMIT,
+            HiveStreamingDataSourceWriter.TASK_EXCEPTION_PROBABILITY_BEFORE_COMMIT_DEFAULT));
+    hiveConf.setDouble(HiveStreamingDataSourceWriter.TASK_EXCEPTION_PROBABILITY_AFTER_COMMIT,
+        options.getDouble(HiveStreamingDataSourceWriter.TASK_EXCEPTION_PROBABILITY_AFTER_COMMIT,
+            HiveStreamingDataSourceWriter.TASK_EXCEPTION_PROBABILITY_AFTER_COMMIT_DEFAULT));
     return hiveConf;
   }
 }

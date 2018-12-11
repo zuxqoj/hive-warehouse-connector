@@ -19,6 +19,7 @@ package com.hortonworks.spark.sql.hive.llap;
 
 import com.hortonworks.hwc.MergeBuilder;
 import com.hortonworks.spark.sql.hive.llap.util.HiveQlUtil;
+import com.hortonworks.spark.sql.hive.llap.util.StreamingMetaCleaner;
 import com.hortonworks.spark.sql.hive.llap.util.TriFunction;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.DataFrameReader;
@@ -26,6 +27,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.function.Supplier;
@@ -149,6 +151,15 @@ public class HiveWarehouseSessionImpl implements com.hortonworks.hwc.HiveWarehou
   @Override
   public MergeBuilder mergeBuilder() {
     return new MergeBuilderImpl(this, DEFAULT_DB.getString(sessionState));
+  }
+
+  @Override
+  public void cleanUpStreamingMeta(String queryCheckpointDir, String dbName, String tableName) {
+    try {
+      new StreamingMetaCleaner(sessionState, queryCheckpointDir, dbName, tableName).clean();
+    } catch (IOException | SQLException e) {
+      throw new RuntimeException(e);
+    }
   }
 
 }

@@ -100,7 +100,6 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
 
   private void deleteDirectories(Path root, String dirName, FileSystem fs) throws IOException {
     Queue<Path> queue = new LinkedList<>();
-    Set<Path> seen = new HashSet<>();
     queue.add(root);
     while (!queue.isEmpty()) {
       Path current = queue.poll();
@@ -108,12 +107,11 @@ public class HiveStreamingDataWriterFactory implements DataWriterFactory<Interna
       if (seen.contains(current)) {
         continue;
       }
-      // seen.add(current);
       try {
         if (current.getName().equals(dirName)) {
             fs.delete(current, true);
             LOG.info("Directory " + current + " deleted because it was a dirty file from a previous failed task.");
-        } else {
+        } else if (fs.getFileStatus(current).isDirectory()) {
           for (FileStatus fileStatus: fs.listStatus(current)) {
             LOG.info("Adding: " + fileStatus.getPath());
             queue.add(fileStatus.getPath());

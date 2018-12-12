@@ -88,6 +88,7 @@ public class TransactionManager {
   }
 
   public void abortTransaction() throws StreamingException{
+    LOG.info("Aborting transaction transaction");
     connection.abortTransaction();
   }
 

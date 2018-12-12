@@ -126,7 +126,7 @@ public class HiveStreamingDataSourceWriter implements SupportsWriteInternalRow, 
     try {
       transactionManager.checkForRunningJobs(id);
       if (!transactionManager.isEpochIdCommitted(id, epochId)) {
-        transactionManager.commitFromWorkerMessages(messages, id, epochId);
+        //transactionManager.commitFromWorkerMessages(messages, id, epochId);
       } else {
         LOG.warn("A batch with parameters"
             + " job=" + id + ","
@@ -157,7 +157,8 @@ public class HiveStreamingDataSourceWriter implements SupportsWriteInternalRow, 
     try {
       transactionManager.abortTransaction();
     } catch (StreamingException e) {
-      throw new RuntimeException("Error aborting transaction", e);
+      // throw new RuntimeException("Error aborting transaction", e);
+      LOG.error("Error aborting transaction", e);
     } finally {
       transactionManager.close();
     }

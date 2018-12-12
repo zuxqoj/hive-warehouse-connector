@@ -112,7 +112,7 @@ public class HiveStreamingDataSourceWriter implements SupportsWriteInternalRow, 
         throw new RuntimeException("checkpointLocation"
             + " should be set in the options");
       }
-      LOG.info("Commit id {}, jobId {}", id, jobId);
+      LOG.info("Commit id {}, jobId {}, epochId {}", id, jobId, epochId);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

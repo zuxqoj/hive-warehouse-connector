@@ -187,6 +187,7 @@ public class TransactionManager {
             HiveQlUtil.updateTableProperty(tableName, commitKey, INITIAL_COMMIT_KEY));
         return  false;
       } else {
+        LOG.info("Long.parseLong(value)=" + Long.parseLong(value) + ", epochId=" + epochId);
         return Long.parseLong(value) >= epochId;
       }
     }

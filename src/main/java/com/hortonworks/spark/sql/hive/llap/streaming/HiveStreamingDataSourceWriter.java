@@ -126,7 +126,7 @@ public class HiveStreamingDataSourceWriter implements SupportsWriteInternalRow, 
     try {
       transactionManager.checkForRunningJobs(id);
       if (!transactionManager.isEpochIdCommitted(id, epochId)) {
-        //transactionManager.commitFromWorkerMessages(messages, id, epochId);
+        transactionManager.commitFromWorkerMessages(messages, id, epochId);
       } else {
         LOG.warn("A batch with parameters"
             + " job=" + id + ","

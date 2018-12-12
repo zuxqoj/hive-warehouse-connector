@@ -59,6 +59,11 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
   public void write(final InternalRow record) throws IOException {
     String delimitedRow = Joiner.on(",").useForNull("")
       .join(scala.collection.JavaConversions.seqAsJavaList(record.toSeq(schema)));
+
+    if (rowsWritten == 0 ) {
+      LOG.info("delimitedRow: " + delimitedRow);
+    }
+
     try {
       streamingConnection.write(delimitedRow.getBytes(Charset.forName("UTF-8")));
       rowsWritten++;

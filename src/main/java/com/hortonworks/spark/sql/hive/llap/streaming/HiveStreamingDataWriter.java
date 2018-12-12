@@ -32,6 +32,8 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
 
   private long rowsWritten = 0;
 
+  private String firstRow;
+
   public HiveStreamingDataWriter(HiveConf hiveConf, String jobId, StructType schema, int partitionId, int
     attemptNumber, HiveStreamingConnection connection) {
     this.jobId = jobId;
@@ -61,7 +63,7 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
       .join(scala.collection.JavaConversions.seqAsJavaList(record.toSeq(schema)));
 
     if (rowsWritten == 0 ) {
-      LOG.info("delimitedRow: " + delimitedRow);
+      firstRow = delimitedRow;
     }
 
     try {
@@ -99,7 +101,7 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
       " connectionStats: " + streamingConnection.getConnectionStats();
     streamingConnection.close();
     LOG.info("Closing streaming connection on commit. Msg: {} rowsWritten: {}", msg, rowsWritten);
-    return new StreamingWriterCommitMessage(streamingConnection.getPartitions());
+    return new StreamingWriterCommitMessage(streamingConnection.getPartitions(), firstRow);
   }
 
   @Override

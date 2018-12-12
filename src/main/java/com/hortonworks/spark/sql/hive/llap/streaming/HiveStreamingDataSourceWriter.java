@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
+import com.hortonworks.spark.sql.hive.llap.SimpleWriterCommitMessage;
+import com.hortonworks.spark.sql.hive.llap.StreamingWriterCommitMessage;
 import com.hortonworks.spark.sql.hive.llap.transaction.TransactionException;
 import com.hortonworks.spark.sql.hive.llap.transaction.TransactionManager;
 import com.hortonworks.spark.sql.hive.llap.util.JobUtil;
@@ -123,6 +125,11 @@ public class HiveStreamingDataSourceWriter implements SupportsWriteInternalRow, 
             + "chanceExceptionBeforeCommit=" + chanceExceptionBeforeCommit);
       }
     }
+
+    for (WriterCommitMessage message: messages) {
+      LOG.info(((StreamingWriterCommitMessage)message).note);
+    }
+
     try {
       transactionManager.checkForRunningJobs(id);
       if (!transactionManager.isEpochIdCommitted(id, epochId)) {

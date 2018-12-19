@@ -267,6 +267,12 @@ assemblyShadeRules in assembly := Seq(
   ShadeRule.rename("io.netty.**" -> "shadenetty.@0").inAll
 )
 test in assembly := {}
+
+// SparkRHWC package
+unmanagedResourceDirectories in Compile += baseDirectory.value
+includeFilter in (Compile, unmanagedResources) := new SimpleFileFilter(
+  _.getCanonicalPath.contains("R/pkg"))
+
 assemblyMergeStrategy in assembly := {
   case PathList("org","apache","logging","log4j","core","config","plugins","Log4j2Plugins.dat") => MergeStrategy.first
   case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.first
@@ -307,11 +313,29 @@ def addPyFilesToZipStream(parent: String, source: File, output: ZipOutputStream)
   }
 }
 
-resourceGenerators in Compile += Def.macroValueI(resourceManaged in Compile map { outDir: File =>
+resourceGenerators in Compile += Def.macroValueI(resourceManaged in Compile map { _: File =>
   val src = new File("./python/pyspark_llap")
   val zipFile = new File(s"./target/pyspark_hwc-$versionString.zip")
   zipFile.delete()
   pyFilesZipRecursive(src, zipFile)
+  Seq.empty[File]
+}).value
+
+// SparkRHWC package
+resourceGenerators in Compile += Def.macroValueI(resourceManaged in Compile map { _: File =>
+  import sys.process.Process
+  import org.apache.commons.io.FileUtils
+
+  val result = Process("./R/install-dev.sh").!
+  if (result != 0) {
+    sys.error(s"R build was failed with exit code $result")
+  }
+  val srcDir = new File("./R/lib/SparkRHWC")
+  val destParent = new File(s"./target/SparkRHWC-$versionString")
+  FileUtils.deleteDirectory(destParent)
+  assert(destParent.mkdir())
+  val destDir = new File(destParent, "SparkRHWC")
+  FileUtils.copyDirectory(srcDir, destDir)
   Seq.empty[File]
 }).value
 
@@ -333,6 +357,12 @@ artifact in (Compile, assembly) := {
   art.copy(`classifier` = None)
 }
 addArtifact(artifact in (Compile, assembly), assembly)
+
+// SparkRHWC package: we're going to include R package source within Jar so that
+// it can be automatically distributed. See `org.apache.spark.deploy.RPackageUtils`
+// in Apache Spark.
+packageOptions in assembly +=
+  Package.ManifestAttributes("Spark-HasRPackage" -> "true")
 
 resolvers += "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
 resolvers += "Additional Maven Repository" at repoUrl

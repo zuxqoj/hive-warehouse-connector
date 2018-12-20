@@ -15,20 +15,17 @@
 # limitations under the License.
 #
 
-library(testthat)
-library(SparkR)
-
 context("Hive Warehouse Connector - session build")
 
 TEST_USER <- "userX"
 TEST_PASSWORD <- "passwordX"
-TEST_HS2_UR <- "jdbc:hive2://nohost:10084"
+TEST_HS2_URL <- "jdbc:hive2://nohost:10084"
 TEST_DBCP2_CONF <- "defaultQueryTimeout=100"
 TEST_EXEC_RESULTS_MAX <- 12345
 TEST_DEFAULT_DB <- "default12345"
 
 # getwd() is ./R
-root <- normalizePath(paste0(getwd(), "/../target"))
+root <- normalizePath(paste0(getwd(), "/../../../../../target"))
 basepath <- Sys.glob(file.path(root, "scala-*"))
 if (length(basepath) == 0) {
   stop("Build the package first. ./target/scala-* directory was not found.")
@@ -53,9 +50,10 @@ if (length(testjarpath) != 1) {
 testjarpath <- testjarpath[[1]]
 
 jarpaths <- paste0(jarpath, ":", testjarpath)
-sparkSession <- sparkR.session("local[4]", "SparkR", "/home/spark",
+sparkSession <- sparkR.session("local[4]", "SparkR", Sys.getenv("SPARK_HOME"),
                                list(spark.driver.extraClassPath = jarpaths,
-                                    spark.executor.extraClassPath = jarpaths))
+                                    spark.executor.extraClassPath = jarpaths),
+                               enableHiveSupport = FALSE)
 
 tryCatch({
   sparkR.newJObject("com.hortonworks.spark.sql.hive.llap.MockConnection")
@@ -93,15 +91,20 @@ test_that("Test all configurations via Spark Session", {
   pairs <- as.list(confPairs)
 
   tryCatch({
-    sparkSession <- sparkR.session("local[4]", "SparkR", "/home/spark", pairs)
+    sparkSession <- sparkR.session("local[4]",
+                                   "SparkR",
+                                   Sys.getenv("SPARK_HOME"),
+                                   pairs,
+                                   enableHiveSupport = FALSE)
     for (name in names(pairs)) {
       expect_equal(sparkR.conf(name)[[1]], pairs[[name]])
     }
   }, finally = {
     sparkR.session.stop()
-    sparkSession <- sparkR.session("local[4]", "SparkR", "/home/spark",
+    sparkSession <- sparkR.session("local[4]", "SparkR", Sys.getenv("SPARK_HOME"),
                                    list(spark.driver.extraClassPath = jarpaths,
-                                        spark.executor.extraClassPath = jarpaths))
+                                        spark.executor.extraClassPath = jarpaths),
+                                   enableHiveSupport = FALSE)
   })
 })
 
@@ -114,8 +117,9 @@ test_that("Test new entry point", {
   HIVESERVER2_JDBC_URL <- "spark.sql.hive.hiveserver2.jdbc.url"
 
   tryCatch({
-    sparkSession <- sparkR.session("local[4]", "SparkR", "/home/spark",
-                                   list(spark.sql.hive.hiveserver2.jdbc.url="test"))
+    sparkSession <- sparkR.session("local[4]", "SparkR", Sys.getenv("SPARK_HOME"),
+                                   list(spark.sql.hive.hiveserver2.jdbc.url="test"),
+                                   enableHiveSupport = FALSE)
 
     hwcbuilder <- HiveWarehouseSession.session(sparkSession)
     hwcbuilder <- userPassword(hwcbuilder, TEST_USER, TEST_PASSWORD)
@@ -127,9 +131,10 @@ test_that("Test new entry point", {
     expect_equal(session(hwcsession), sparkSession)
   }, finally = {
     sparkR.session.stop()
-    sparkSession <- sparkR.session("local[4]", "SparkR", "/home/spark",
-    list(spark.driver.extraClassPath = jarpaths,
-    spark.executor.extraClassPath = jarpaths))
+    sparkSession <- sparkR.session("local[4]", "SparkR", Sys.getenv("SPARK_HOME"),
+                                   list(spark.driver.extraClassPath = jarpaths,
+                                        spark.executor.extraClassPath = jarpaths),
+                                   enableHiveSupport = FALSE)
   })
 })
 

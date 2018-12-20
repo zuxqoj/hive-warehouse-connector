@@ -1,3 +1,4 @@
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +17,11 @@
 #
 
 library(testthat)
-library(SparkR)
-library(SparkRHWC)
-test_check("SparkRHWC")
+if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
+  stop("SPARK_HOME is not set, existing.")
+}
+library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+library(SparkRHWC, lib.loc = c(getwd(), "R", "lib"))
+
+test_package("SparkRHWC")
+

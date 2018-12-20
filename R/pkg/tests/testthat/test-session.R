@@ -15,8 +15,182 @@
 # limitations under the License.
 #
 
-context("Hive Warehouse Connector")
+library(testthat)
+library(SparkR)
 
-test_that("calling sparkR.session returns existing SparkSession", {
-  expect_equal(1, 1)
+context("Hive Warehouse Connector - session build")
+
+TEST_USER <- "userX"
+TEST_PASSWORD <- "passwordX"
+TEST_HS2_UR <- "jdbc:hive2://nohost:10084"
+TEST_DBCP2_CONF <- "defaultQueryTimeout=100"
+TEST_EXEC_RESULTS_MAX <- 12345
+TEST_DEFAULT_DB <- "default12345"
+
+# getwd() is ./R
+root <- normalizePath(paste0(getwd(), "/../target"))
+basepath <- Sys.glob(file.path(root, "scala-*"))
+if (length(basepath) == 0) {
+  stop("Build the package first. ./target/scala-* directory was not found.")
+}
+basepath <- basepath[[1]]
+
+jarpath <- Sys.glob(file.path(basepath, "/hive-warehouse-connector-assembly-*"))
+if (length(jarpath) != 1) {
+  stop(paste0("Multiple assemply jars were detected in ./target/scala-* directory or not found ",
+              jarpath,
+              "Please clean up and build again"))
+}
+jarpath <- jarpath[[1]]
+
+testjarpath <- Sys.glob(file.path(basepath, "/hive-warehouse-connector*tests.jar"))
+if (length(testjarpath) != 1) {
+  stop(paste0("Multiple test:package jars were detected in ./target/scala-* directory ",
+              "or not found ",
+              testjarpath,
+              "Please clean up and build again"))
+}
+testjarpath <- testjarpath[[1]]
+
+jarpaths <- paste0(jarpath, ":", testjarpath)
+sparkSession <- sparkR.session("local[4]", "SparkR", "/home/spark",
+                               list(spark.driver.extraClassPath = jarpaths,
+                                    spark.executor.extraClassPath = jarpaths))
+
+tryCatch({
+  sparkR.newJObject("com.hortonworks.spark.sql.hive.llap.MockConnection")
+}, error = function(e) {
+  stop(paste0("SparkRHWC tests are dependent on mock classes defined in test ",
+              "codes. These should be compiled together, for example, by ",
+              "'sbt test:package'."))
 })
+
+confPairs <- new.env()
+confPairs$spark.datasource.hive.warehouse.password <- TEST_PASSWORD
+confPairs$spark.datasource.hive.warehouse.dbcp2.conf <- TEST_DBCP2_CONF
+confPairs$spark.datasource.hive.warehouse.default.db <- TEST_DEFAULT_DB
+confPairs$spark.datasource.hive.warehouse.user.name <- TEST_USER
+confPairs$spark.datasource.hive.warehouse.exec.results.max <- TEST_EXEC_RESULTS_MAX
+
+
+test_that("Test all HWC builder configurations", {
+  hwcbuilder <- HiveWarehouseBuilder.session(sparkSession)
+  hwcbuilder <- userPassword(hwcbuilder, TEST_USER, TEST_PASSWORD)
+  hwcbuilder <- hs2url(hwcbuilder, TEST_HS2_URL)
+  hwcbuilder <- dbcp2Conf(hwcbuilder, TEST_DBCP2_CONF)
+  hwcbuilder <- maxExecResults(hwcbuilder, TEST_EXEC_RESULTS_MAX)
+  hwcbuilder <- defaultDB(hwcbuilder, TEST_DEFAULT_DB)
+  jstate <- sparkR.callJMethod(hwcbuilder@jhwbuilder, "sessionStateForTest")
+  hive <- sparkR.newJObject("com.hortonworks.spark.sql.hive.llap.MockHiveWarehouseSessionImpl",
+                            jstate)
+  properties <- sparkR.callJMethod(sparkR.callJMethod(hive, "sessionState"), "getProps")
+
+  expect_equal(properties, confPairs)
+})
+
+test_that("Test all configurations via Spark Session", {
+  sparkR.session.stop()
+  pairs <- as.list(confPairs)
+
+  tryCatch({
+    sparkSession <- sparkR.session("local[4]", "SparkR", "/home/spark", pairs)
+    for (name in names(pairs)) {
+      expect_equal(sparkR.conf(name)[[1]], pairs[[name]])
+    }
+  }, finally = {
+    sparkR.session.stop()
+    sparkSession <- sparkR.session("local[4]", "SparkR", "/home/spark",
+                                   list(spark.driver.extraClassPath = jarpaths,
+                                        spark.executor.extraClassPath = jarpaths))
+  })
+})
+
+test_that("Test HWC session build", {
+  expect_false(is.null(build(HiveWarehouseBuilder.session(sparkSession))))
+})
+
+test_that("Test new entry point", {
+  sparkR.session.stop()
+  HIVESERVER2_JDBC_URL <- "spark.sql.hive.hiveserver2.jdbc.url"
+
+  tryCatch({
+    sparkSession <- sparkR.session("local[4]", "SparkR", "/home/spark",
+                                   list(spark.sql.hive.hiveserver2.jdbc.url="test"))
+
+    hwcbuilder <- HiveWarehouseSession.session(sparkSession)
+    hwcbuilder <- userPassword(hwcbuilder, TEST_USER, TEST_PASSWORD)
+    hwcbuilder <- hs2url(hwcbuilder, TEST_HS2_URL)
+    hwcbuilder <- dbcp2Conf(hwcbuilder, TEST_DBCP2_CONF)
+    hwcbuilder <- maxExecResults(hwcbuilder, TEST_EXEC_RESULTS_MAX)
+    hwcbuilder <- defaultDB(hwcbuilder, TEST_DEFAULT_DB)
+    hwcsession <- build(hwcbuilder)
+    expect_equal(session(hwcsession), sparkSession)
+  }, finally = {
+    sparkR.session.stop()
+    sparkSession <- sparkR.session("local[4]", "SparkR", "/home/spark",
+    list(spark.driver.extraClassPath = jarpaths,
+    spark.executor.extraClassPath = jarpaths))
+  })
+})
+
+
+context("Hive Warehouse Connector - SQL execution")
+
+hwcbuilder <- HiveWarehouseBuilder.session(sparkSession)
+hwcbuilder <- userPassword(hwcbuilder, TEST_USER, TEST_PASSWORD)
+hwcbuilder <- hs2url(hwcbuilder, TEST_HS2_URL)
+hwcbuilder <- dbcp2Conf(hwcbuilder, TEST_DBCP2_CONF)
+hwcbuilder <- maxExecResults(hwcbuilder, TEST_EXEC_RESULTS_MAX)
+hwcbuilder <- defaultDB(hwcbuilder, TEST_DEFAULT_DB)
+jstate <- sparkR.callJMethod(hwcbuilder@jhwbuilder, "sessionStateForTest")
+jhwsession <- sparkR.newJObject("com.hortonworks.spark.sql.hive.llap.MockHiveWarehouseSessionImpl",
+                                jstate)
+hive <- new(SparkRHWC:::HiveWarehouseSessionImpl, sparkSession, jhwsession)
+mockExecuteResultSize <- sparkR.callJMethod(
+  sparkR.callJMethod(
+    sparkR.callJStatic(
+      "com.hortonworks.spark.sql.hive.llap.MockHiveWarehouseSessionImpl", "testFixture"),
+  "getData"),
+"size")
+RESULT_SIZE <- 10
+
+
+test_that("Test executeQuery", {
+  expect_equal(count(executeQuery(hive, "SELECT * FROM t1")), RESULT_SIZE)
+})
+
+test_that("Test executeUpdate", {
+  expect_true(executeUpdate(hive, "SELECT * FROM t1"))
+})
+
+test_that("Test setDatabase", {
+  setDatabase(hive, TEST_DEFAULT_DB)
+})
+
+test_that("Test describeTable", {
+  expect_equal(count(describeTable(hive, "testTable")), mockExecuteResultSize)
+})
+
+test_that("Test createDatabase", {
+  createDatabase(hive, TEST_DEFAULT_DB, FALSE)
+  createDatabase(hive, TEST_DEFAULT_DB, TRUE)
+})
+
+test_that("Test showTable", {
+  expect_equal(count(showTables(hive, "testTable")), mockExecuteResultSize)
+})
+
+test_that("Test createTable", {
+  tablebuilder <- new(SparkRHWC:::CreateTableBuilder,
+                      sparkSession,
+                      createTable(hive, "TestTable")$jtablebuilder)
+  tablebuilder <- ifNotExists(tablebuilder)
+  tablebuilder <- column(tablebuilder, "id", "int")
+  tablebuilder <- column(tablebuilder, "val", "string")
+  tablebuilder <- partition(tablebuilder, "id", "int")
+  tablebuilder <- clusterBy(tablebuilder, 100, "val")
+  tablebuilder <- prop(tablebuilder, "key", "value")
+  create(tablebuilder)
+})
+
+sparkR.session.stop()

@@ -267,6 +267,12 @@ assemblyShadeRules in assembly := Seq(
   ShadeRule.rename("io.netty.**" -> "shadenetty.@0").inAll
 )
 test in assembly := {}
+
+// R package
+unmanagedResourceDirectories in Compile += baseDirectory.value
+includeFilter in (Compile, unmanagedResources) := new SimpleFileFilter(
+  _.getCanonicalPath.contains("R/pkg"))
+
 assemblyMergeStrategy in assembly := {
   case PathList("org","apache","logging","log4j","core","config","plugins","Log4j2Plugins.dat") => MergeStrategy.first
   case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.first
@@ -333,6 +339,12 @@ artifact in (Compile, assembly) := {
   art.copy(`classifier` = None)
 }
 addArtifact(artifact in (Compile, assembly), assembly)
+
+// R package: we're going to include R package within Jar so that
+// it can be automatically distributed. See `org.apache.spark.deploy.RPackageUtils`
+// in Apache Spark.
+packageOptions in assembly +=
+  Package.ManifestAttributes( "Spark-HasRPackage" -> "true" )
 
 resolvers += "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
 resolvers += "Additional Maven Repository" at repoUrl

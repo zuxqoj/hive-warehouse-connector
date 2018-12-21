@@ -23,19 +23,13 @@ set -x
 
 FWDIR="$(cd "`dirname "${BASH_SOURCE[0]}"`"; pwd)"
 LIB_DIR="$FWDIR/lib"
-
 mkdir -p "$LIB_DIR"
 
 pushd "$FWDIR" > /dev/null
 
 . "$FWDIR/find-r.sh"
-
 # Install SparkRHWC to $LIB_DIR
 "$R_SCRIPT_PATH/R" CMD INSTALL --library="$LIB_DIR" "$FWDIR/pkg/"
-
-# Zip the SparkRHWC package so that it can be distributed to worker nodes on YARN
-cd "$LIB_DIR"
-jar cfM "$LIB_DIR/sparkrhwc.zip" SparkRHWC
 
 popd > /dev/null
 

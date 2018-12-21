@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+requireNamespace("SparkR")
+
 HiveWarehouseSession.HIVE_WAREHOUSE_CONNECTOR <-
   "com.hortonworks.spark.sql.hive.llap.HiveWarehouseConnector"
 HiveWarehouseSession.DATAFRAME_TO_STREAM <-
@@ -23,7 +25,7 @@ HiveWarehouseSession.STREAM_TO_STREAM <-
   "com.hortonworks.spark.sql.hive.llap.streaming.HiveStreamingDataSource"
 
 
-# HiveWarehouseBuilder class and methods implemented in S4 OO classes
+# HiveWarehouseSession and HiveWarehouseBuilder class and methods implemented in S4 OO classes
 HiveWarehouseBuilder <- setClass("HiveWarehouseBuilder",
                                  slots = list(jsession = "jobj", jhwbuilder = "jobj"))
 HiveWarehouseSession <- HiveWarehouseBuilder
@@ -41,9 +43,9 @@ setMethod("initialize", "HiveWarehouseBuilder", function(.Object, jsession) {
 setGeneric("userPassword", function(hwbuilder, user, password) { standardGeneric("userPassword") })
 setGeneric("hs2url", function(hwbuilder, hs2url) { standardGeneric("hs2url") })
 setGeneric("maxExecResults",
-function(hwbuilder, maxExecResults) {
+  function(hwbuilder, maxExecResults) {
     standardGeneric("maxExecResults")
-})
+  })
 setGeneric("dbcp2Conf", function(hwbuilder, dbcp2Conf) { standardGeneric("dbcp2Conf") })
 setGeneric("defaultDB", function(hwbuilder, defaultDB) { standardGeneric("defaultDB") })
 setGeneric("principal", function(hwbuilder, principal) { standardGeneric("principal") })
@@ -233,7 +235,7 @@ setMethod("dropTable",
           })
 
 
-# HiveWarehouseBuilder class and methods implemented in S4 OO classes
+# CreateTableBuilder class and methods implemented in S4 OO classes
 CreateTableBuilder <- setClass("CreateTableBuilder",
                                slots = list(jsession = "jobj", jtablebuilder = "jobj"))
 
@@ -305,4 +307,3 @@ setMethod("toString",
           function(tablebuilder) {
             sparkR.callJMethod(tablebuilder@jtablebuilder, "toString")
           })
-

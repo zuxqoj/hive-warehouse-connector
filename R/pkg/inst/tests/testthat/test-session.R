@@ -22,7 +22,7 @@ TEST_DBCP2_CONF <- "defaultQueryTimeout=100"
 TEST_EXEC_RESULTS_MAX <- "12345"
 TEST_DEFAULT_DB <- "default12345"
 
-# getwd() is ./R
+# getwd() is ./R/lib/inst/tests/testthat
 root <- normalizePath(paste0(getwd(), "/../../../../../target"))
 basepath <- Sys.glob(file.path(root, "scala-*"))
 if (length(basepath) == 0) {

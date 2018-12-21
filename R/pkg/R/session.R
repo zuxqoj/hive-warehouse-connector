@@ -28,7 +28,7 @@ HiveWarehouseBuilder <- setClass("HiveWarehouseBuilder",
                                  slots = list(jsession = "jobj", jhwbuilder = "jobj"))
 HiveWarehouseSession <- HiveWarehouseBuilder
 
-HiveWarehouseBuilder.session <- function(jsession) { new(HiveWarehouseBuilder, jsession) }
+HiveWarehouseBuilder.session <- function(jsession) { new("HiveWarehouseBuilder", jsession) }
 HiveWarehouseSession.session <- HiveWarehouseBuilder.session
 
 setMethod("initialize", "HiveWarehouseBuilder", function(.Object, jsession) {
@@ -103,12 +103,13 @@ setMethod("build",
           signature(hwbuilder = "HiveWarehouseBuilder"),
           function(hwbuilder) {
             jhwsession <- sparkR.callJMethod(hwbuilder@jhwbuilder, "build")
-            new(HiveWarehouseSessionImpl, hwbuilder@jsession, jhwsession)
+            new("HiveWarehouseSessionImpl", hwbuilder@jsession, jhwsession)
           })
 
 
 # HiveWarehouseSessionImpl class and methods implemented in S4 OO classes
-HiveWarehouseSessionImpl <- setClass("HiveWarehouseSessionImpl", slots = list(jhwsession = "jobj"))
+HiveWarehouseSessionImpl <- setClass("HiveWarehouseSessionImpl",
+                                     slots = list(jsession = "jobj", jhwsession = "jobj"))
 
 setMethod("initialize", "HiveWarehouseSessionImpl", function(.Object, jsession, jhwsession) {
   .Object@jsession <- jsession
@@ -156,8 +157,7 @@ setMethod("execute",
 setMethod("executeUpdate",
           signature(hwsession = "HiveWarehouseSessionImpl", sql = "character"),
           function(hwsession, sql) {
-            jdf <- sparkR.callJMethod(hwsession@jhwsession, "executeUpdate", sql)
-            SparkR:::dataFrame(jdf)
+            as.logical(sparkR.callJMethod(hwsession@jhwsession, "executeUpdate", sql))
           })
 
 setMethod("table",
@@ -210,7 +210,7 @@ setMethod("createTable",
           signature(hwsession = "HiveWarehouseSessionImpl", tableName = "character"),
           function(hwsession, tableName) {
               jtablebuilder <- sparkR.callJMethod(hwsession@jhwsession, "createTable", tableName)
-            new(CreateTableBuilder, hwsession@jsession, jtablebuilder)
+            new("CreateTableBuilder", hwsession@jsession, jtablebuilder)
           })
 
 setMethod("dropDatabase",

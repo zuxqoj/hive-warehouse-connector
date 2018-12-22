@@ -7,7 +7,6 @@ Authors@R: c(person("Hyukjin", "Kwon", role = c("aut", "cre"),
                     email = "hkwon@hortonworks.com"),
              person(family = "Hortonworks", role = c("aut", "cph")))
 URL: https://github.com/hortonworks/hive-warehouse-connector-release
-BugReports: https://cwiki.apache.org/confluence/display/SPARK/Contributing+to+Spark#ContributingtoSpark-ContributingBugReports
 Depends:
     R (>= 3.4)
 Suggests:

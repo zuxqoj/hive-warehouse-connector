@@ -344,7 +344,7 @@ addArtifact(artifact in (Compile, assembly), assembly)
 // it can be automatically distributed. See `org.apache.spark.deploy.RPackageUtils`
 // in Apache Spark.
 packageOptions in assembly +=
-  Package.ManifestAttributes( "Spark-HasRPackage" -> "true" )
+  Package.ManifestAttributes("Spark-HasRPackage" -> "true")
 
 resolvers += "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
 resolvers += "Additional Maven Repository" at repoUrl

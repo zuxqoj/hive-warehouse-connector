@@ -284,15 +284,15 @@ setMethod("prop",
 setMethod("clusterBy",
           signature(tablebuilder = "CreateTableBuilder", numBuckets = "numeric"),
           function(tablebuilder, numBuckets, ...) {
-            cols <- list(...)
-            jarray <- sparkR.newJObject("java.util.ArrayList")
-            for (col in cols) {
-              stopifnot(is.character(col))
-              sparkR.callJMethod(jarray, "add", col)
-            }
+            cols <- lapply(list(...),
+                           function(col) {
+                             stopifnot(is.character(col))
+                             col
+                           })
             sparkR.callJMethod(tablebuilder@jtablebuilder,
-                              "clusterBy", as.integer(numBuckets),
-                              jarray)
+                              "clusterBy",
+                              as.integer(numBuckets),
+                              cols)
             tablebuilder
           })
 

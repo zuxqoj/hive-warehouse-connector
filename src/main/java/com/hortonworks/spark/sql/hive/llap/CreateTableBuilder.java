@@ -74,17 +74,6 @@ public class CreateTableBuilder implements com.hortonworks.hwc.CreateTableBuilde
         return this;
     }
 
-    // This is called in HWC R library.
-    public CreateTableBuilder clusterBy(long numBuckets, ArrayList<Object> columns) {
-        List<String> strings = new ArrayList<String>();
-        for (Object object : columns) {
-            strings.add(object != null ? object.toString() : null);
-        }
-        int size = strings.size();
-        String[] stringArr = new String[size];
-        return clusterBy(numBuckets, strings.toArray(stringArr));
-    }
-
     @Override
     public void create() {
         hive.executeUpdate(this.toString());

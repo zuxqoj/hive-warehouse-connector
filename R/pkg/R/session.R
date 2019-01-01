@@ -35,7 +35,7 @@ HiveWarehouseSession.session <- HiveWarehouseBuilder.session
 
 setMethod("initialize", "HiveWarehouseBuilder", function(.Object, jsession) {
   .Object@jsession <- jsession
-  .Object@jhwbuilder <- sparkR.callJStatic(
+  .Object@jhwbuilder <- SparkR::sparkR.callJStatic(
     "com.hortonworks.spark.sql.hive.llap.HiveWarehouseBuilder", "session", jsession)
   .Object
 })
@@ -55,56 +55,56 @@ setGeneric("build", function(hwbuilder) { standardGeneric("build") })
 setMethod("userPassword",
           signature(hwbuilder = "HiveWarehouseBuilder", user = "character", password = "character"),
           function(hwbuilder, user, password) {
-            sparkR.callJMethod(hwbuilder@jhwbuilder, "userPassword", user, password)
+            SparkR::sparkR.callJMethod(hwbuilder@jhwbuilder, "userPassword", user, password)
             hwbuilder
           })
 
 setMethod("hs2url",
           signature(hwbuilder = "HiveWarehouseBuilder", hs2url = "character"),
           function(hwbuilder, hs2url) {
-            sparkR.callJMethod(hwbuilder@jhwbuilder, "hs2url", hs2url)
+            SparkR::sparkR.callJMethod(hwbuilder@jhwbuilder, "hs2url", hs2url)
             hwbuilder
           })
 
 setMethod("maxExecResults",
           signature(hwbuilder = "HiveWarehouseBuilder", maxExecResults = "numeric"),
           function(hwbuilder, maxExecResults) {
-            sparkR.callJMethod(hwbuilder@jhwbuilder, "maxExecResults", as.integer(maxExecResults))
+            SparkR::sparkR.callJMethod(hwbuilder@jhwbuilder, "maxExecResults", as.integer(maxExecResults))
             hwbuilder
           })
 
 setMethod("dbcp2Conf",
           signature(hwbuilder = "HiveWarehouseBuilder", dbcp2Conf = "character"),
           function(hwbuilder, dbcp2Conf) {
-            sparkR.callJMethod(hwbuilder@jhwbuilder, "dbcp2Conf", dbcp2Conf)
+            SparkR::sparkR.callJMethod(hwbuilder@jhwbuilder, "dbcp2Conf", dbcp2Conf)
             hwbuilder
           })
 
 setMethod("defaultDB",
           signature(hwbuilder = "HiveWarehouseBuilder", defaultDB = "character"),
           function(hwbuilder, defaultDB) {
-            sparkR.callJMethod(hwbuilder@jhwbuilder, "defaultDB", defaultDB)
+            SparkR::sparkR.callJMethod(hwbuilder@jhwbuilder, "defaultDB", defaultDB)
             hwbuilder
           })
 
 setMethod("principal",
           signature(hwbuilder = "HiveWarehouseBuilder", principal = "character"),
           function(hwbuilder, principal) {
-            sparkR.callJMethod(hwbuilder@jhwbuilder, "principal", principal)
+            SparkR::sparkR.callJMethod(hwbuilder@jhwbuilder, "principal", principal)
             hwbuilder
           })
 
 setMethod("credentialsEnabled",
           signature(hwbuilder = "HiveWarehouseBuilder"),
           function(hwbuilder) {
-            sparkR.callJMethod(hwbuilder@jhwbuilder, "credentialsEnabled")
+            SparkR::sparkR.callJMethod(hwbuilder@jhwbuilder, "credentialsEnabled")
             hwbuilder
           })
 
 setMethod("build",
           signature(hwbuilder = "HiveWarehouseBuilder"),
           function(hwbuilder) {
-            jhwsession <- sparkR.callJMethod(hwbuilder@jhwbuilder, "build")
+            jhwsession <- SparkR::sparkR.callJMethod(hwbuilder@jhwbuilder, "build")
             new("HiveWarehouseSessionImpl", hwbuilder@jsession, jhwsession)
           })
 
@@ -145,27 +145,27 @@ setGeneric("dropTable",
 setMethod("executeQuery",
           signature(hwsession = "HiveWarehouseSessionImpl", sql = "character"),
           function(hwsession, sql) {
-            jdf <- sparkR.callJMethod(hwsession@jhwsession, "executeQuery", sql)
+            jdf <- SparkR::sparkR.callJMethod(hwsession@jhwsession, "executeQuery", sql)
             SparkR:::dataFrame(jdf)
           })
 
 setMethod("execute",
           signature(hwsession = "HiveWarehouseSessionImpl", sql = "character"),
           function(hwsession, sql) {
-            jdf <- sparkR.callJMethod(hwsession@jhwsession, "execute", sql)
+            jdf <- SparkR::sparkR.callJMethod(hwsession@jhwsession, "execute", sql)
             SparkR:::dataFrame(jdf)
           })
 
 setMethod("executeUpdate",
           signature(hwsession = "HiveWarehouseSessionImpl", sql = "character"),
           function(hwsession, sql) {
-            as.logical(sparkR.callJMethod(hwsession@jhwsession, "executeUpdate", sql))
+            as.logical(SparkR::sparkR.callJMethod(hwsession@jhwsession, "executeUpdate", sql))
           })
 
 setMethod("table",
           signature(hwsession = "HiveWarehouseSessionImpl", sql = "character"),
           function(hwsession, sql) {
-            jdf <- sparkR.callJMethod(hwsession@jhwsession, "table", sql)
+            jdf <- SparkR::sparkR.callJMethod(hwsession@jhwsession, "table", sql)
             SparkR:::dataFrame(jdf)
           })
 
@@ -176,27 +176,27 @@ setMethod("session",
 setMethod("setDatabase",
           signature(hwsession = "HiveWarehouseSessionImpl", name = "character"),
           function(hwsession, name) {
-            sparkR.callJMethod(hwsession@jhwsession, "setDatabase", name)
+            SparkR::sparkR.callJMethod(hwsession@jhwsession, "setDatabase", name)
           })
 
 setMethod("showDatabases",
           signature(hwsession = "HiveWarehouseSessionImpl"),
           function(hwsession) {
-            jdf <- sparkR.callJMethod(hwsession@jhwsession, "showDatabases")
+            jdf <- SparkR::sparkR.callJMethod(hwsession@jhwsession, "showDatabases")
             SparkR:::dataFrame(jdf)
           })
 
 setMethod("showTables",
           signature(hwsession = "HiveWarehouseSessionImpl"),
           function(hwsession) {
-            jdf <- sparkR.callJMethod(hwsession@jhwsession, "showTables")
+            jdf <- SparkR::sparkR.callJMethod(hwsession@jhwsession, "showTables")
             SparkR:::dataFrame(jdf)
           })
 
 setMethod("describeTable",
           signature(hwsession = "HiveWarehouseSessionImpl", table = "character"),
           function(hwsession, table) {
-            jdf <- sparkR.callJMethod(hwsession@jhwsession, "describeTable", table)
+            jdf <- SparkR::sparkR.callJMethod(hwsession@jhwsession, "describeTable", table)
             SparkR:::dataFrame(jdf)
           })
 
@@ -205,13 +205,13 @@ setMethod("createDatabase",
                     database = "character",
                     ifNotExists = "logical"),
           function(hwsession, database, ifNotExists) {
-            sparkR.callJMethod(hwsession@jhwsession, "createDatabase", database, ifNotExists)
+            SparkR::sparkR.callJMethod(hwsession@jhwsession, "createDatabase", database, ifNotExists)
           })
 
 setMethod("createTable",
           signature(hwsession = "HiveWarehouseSessionImpl", tableName = "character"),
           function(hwsession, tableName) {
-              jtablebuilder <- sparkR.callJMethod(hwsession@jhwsession, "createTable", tableName)
+              jtablebuilder <- SparkR::sparkR.callJMethod(hwsession@jhwsession, "createTable", tableName)
             new("CreateTableBuilder", hwsession@jsession, jtablebuilder)
           })
 
@@ -221,7 +221,7 @@ setMethod("dropDatabase",
                     ifNotExists = "logical",
                     cascade = "logical"),
           function(hwsession, database, ifNotExists, cascade) {
-            sparkR.callJMethod(
+            SparkR::sparkR.callJMethod(
               hwsession@jhwsession,"dropDatabase", database, ifNotExists, cascade)
           })
 
@@ -231,7 +231,7 @@ setMethod("dropTable",
                     ifExists = "logical",
                     purge = "logical"),
           function(hwsession, table, ifExists, purge) {
-            sparkR.callJMethod(hwsession@jhwsession, "createDatabase", table, ifExists, purge)
+            SparkR::sparkR.callJMethod(hwsession@jhwsession, "createDatabase", table, ifExists, purge)
           })
 
 
@@ -256,28 +256,28 @@ setGeneric("toString", function(tablebuilder) { standardGeneric("toString") })
 setMethod("ifNotExists",
           signature(tablebuilder = "CreateTableBuilder"),
           function(tablebuilder) {
-            sparkR.callJMethod(tablebuilder@jtablebuilder, "ifNotExists")
+            SparkR::sparkR.callJMethod(tablebuilder@jtablebuilder, "ifNotExists")
             tablebuilder
           })
 
 setMethod("column",
           signature(tablebuilder = "CreateTableBuilder", name = "character", type = "character"),
           function(tablebuilder, name, type) {
-            sparkR.callJMethod(tablebuilder@jtablebuilder, "column", name, type)
+            SparkR::sparkR.callJMethod(tablebuilder@jtablebuilder, "column", name, type)
             tablebuilder
           })
 
 setMethod("partition",
           signature(tablebuilder = "CreateTableBuilder", name = "character", type = "character"),
           function(tablebuilder, name, type) {
-            sparkR.callJMethod(tablebuilder@jtablebuilder, "partition", name, type)
+            SparkR::sparkR.callJMethod(tablebuilder@jtablebuilder, "partition", name, type)
             tablebuilder
           })
 
 setMethod("prop",
           signature(tablebuilder = "CreateTableBuilder", key = "character", value = "character"),
           function(tablebuilder, key, value) {
-            sparkR.callJMethod(tablebuilder@jtablebuilder, "prop", key, value)
+            SparkR::sparkR.callJMethod(tablebuilder@jtablebuilder, "prop", key, value)
             tablebuilder
           })
 
@@ -289,7 +289,7 @@ setMethod("clusterBy",
                              stopifnot(is.character(col))
                              col
                            })
-            sparkR.callJMethod(tablebuilder@jtablebuilder,
+            SparkR::sparkR.callJMethod(tablebuilder@jtablebuilder,
                               "clusterBy",
                               as.integer(numBuckets),
                               cols)
@@ -299,11 +299,11 @@ setMethod("clusterBy",
 setMethod("create",
           signature(tablebuilder = "CreateTableBuilder"),
           function(tablebuilder) {
-            sparkR.callJMethod(tablebuilder@jtablebuilder, "create")
+            SparkR::sparkR.callJMethod(tablebuilder@jtablebuilder, "create")
           })
 
 setMethod("toString",
           signature(tablebuilder = "CreateTableBuilder"),
           function(tablebuilder) {
-            sparkR.callJMethod(tablebuilder@jtablebuilder, "toString")
+            SparkR::sparkR.callJMethod(tablebuilder@jtablebuilder, "toString")
           })

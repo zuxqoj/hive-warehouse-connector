@@ -19,7 +19,8 @@
 
 FWDIR="$(cd `dirname $0`; pwd)"
 FAILED=0
-Rscript $FWDIR/pkg/tests/run-all.R
+. "$FWDIR/find-r.sh"
+"$R_SCRIPT_PATH/Rscript" $FWDIR/pkg/tests/run-all.R
 FAILED=$((PIPESTATUS[0]||$FAILED))
 
 if [[ $FAILED != 0 ]]; then

@@ -86,6 +86,33 @@ mockExecuteResultSize <- sparkR.callJMethod(
 RESULT_SIZE <- 10
 
 
+context("Hive Warehouse Connector - SQL execution")
+
+test_that("Test executeQuery", {
+  expect_equal(count(executeQuery(hive, "SELECT * FROM t1")), RESULT_SIZE)
+})
+
+test_that("Test executeUpdate", {
+  expect_true(executeUpdate(hive, "SELECT * FROM t1"))
+})
+
+test_that("Test setDatabase", {
+  setDatabase(hive, TEST_DEFAULT_DB)
+})
+
+test_that("Test describeTable", {
+  expect_equal(count(describeTable(hive, "testTable")), mockExecuteResultSize)
+})
+
+test_that("Test createDatabase", {
+  createDatabase(hive, TEST_DEFAULT_DB, FALSE)
+  createDatabase(hive, TEST_DEFAULT_DB, TRUE)
+})
+
+test_that("Test showTable", {
+  expect_equal(count(showTables(hive)), mockExecuteResultSize)
+})
+
 test_that("Test createTable", {
   tablebuilder <- new("CreateTableBuilder",
                       sparkSession,
@@ -97,7 +124,80 @@ test_that("Test createTable", {
   tablebuilder <- clusterBy(tablebuilder, 100, "val")
   tablebuilder <- prop(tablebuilder, "key", "value")
   create(tablebuilder)
-  print("aaaaa")
+})
+
+
+context("Hive Warehouse Connector - session build")
+
+test_that("Test all HWC builder configurations", {
+  hwcbuilder <- HiveWarehouseBuilder.session(sparkSession)
+  hwcbuilder <- userPassword(hwcbuilder, TEST_USER, TEST_PASSWORD)
+  hwcbuilder <- hs2url(hwcbuilder, TEST_HS2_URL)
+  hwcbuilder <- dbcp2Conf(hwcbuilder, TEST_DBCP2_CONF)
+  hwcbuilder <- maxExecResults(hwcbuilder, as.integer(TEST_EXEC_RESULTS_MAX))
+  hwcbuilder <- defaultDB(hwcbuilder, TEST_DEFAULT_DB)
+  jstate <- sparkR.callJMethod(hwcbuilder@jhwbuilder, "sessionStateForTest")
+  hive <- sparkR.newJObject("com.hortonworks.spark.sql.hive.llap.MockHiveWarehouseSessionImpl",
+                            jstate)
+  properties <- sparkR.callJMethod(sparkR.callJMethod(hive, "sessionState"), "getProps")
+
+  expect_equal(properties, confPairs)
+})
+
+
+test_that("Test HWC session build", {
+  expect_false(is.null(build(HiveWarehouseBuilder.session(sparkSession))))
+})
+
+
+test_that("Test all configurations via Spark Session", {
+  sparkR.session.stop()
+  pairs <- as.list(confPairs)
+
+  tryCatch({
+    sparkSession <- sparkR.session("local[4]",
+                                   "SparkR",
+                                   Sys.getenv("SPARK_HOME"),
+                                   pairs,
+                                   enableHiveSupport = FALSE)
+    for (name in names(pairs)) {
+      expect_equal(sparkR.conf(name)[[1]], pairs[[name]])
+    }
+  }, finally = {
+    sparkR.session.stop()
+    sparkSession <- sparkR.session("local[4]", "SparkR", Sys.getenv("SPARK_HOME"),
+                                   list(spark.driver.extraClassPath = jarpaths,
+                                        spark.executor.extraClassPath = jarpaths),
+                                   enableHiveSupport = FALSE)
+  })
+})
+
+test_that("Test new entry point", {
+  sparkR.session.stop()
+  HIVESERVER2_JDBC_URL <- "spark.sql.hive.hiveserver2.jdbc.url"
+
+  tryCatch({
+    sparkSession <- sparkR.session("local[4]", "SparkR", Sys.getenv("SPARK_HOME"),
+                                   list(spark.driver.extraClassPath = jarpaths,
+                                        spark.executor.extraClassPath = jarpaths,
+                                        spark.sql.hive.hiveserver2.jdbc.url="test"),
+                                   enableHiveSupport = FALSE)
+
+    hwcbuilder <- HiveWarehouseSession.session(sparkSession)
+    hwcbuilder <- userPassword(hwcbuilder, TEST_USER, TEST_PASSWORD)
+    hwcbuilder <- hs2url(hwcbuilder, TEST_HS2_URL)
+    hwcbuilder <- dbcp2Conf(hwcbuilder, TEST_DBCP2_CONF)
+    hwcbuilder <- maxExecResults(hwcbuilder, as.integer(TEST_EXEC_RESULTS_MAX))
+    hwcbuilder <- defaultDB(hwcbuilder, TEST_DEFAULT_DB)
+    hwcsession <- build(hwcbuilder)
+    expect_equal(session(hwcsession), sparkSession)
+  }, finally = {
+    sparkR.session.stop()
+    sparkSession <- sparkR.session("local[4]", "SparkR", Sys.getenv("SPARK_HOME"),
+                                   list(spark.driver.extraClassPath = jarpaths,
+                                        spark.executor.extraClassPath = jarpaths),
+                                   enableHiveSupport = FALSE)
+  })
 })
 
 sparkR.session.stop()

@@ -313,11 +313,30 @@ def addPyFilesToZipStream(parent: String, source: File, output: ZipOutputStream)
   }
 }
 
-resourceGenerators in Compile += Def.macroValueI(resourceManaged in Compile map { outDir: File =>
+// PySpark HWC build
+resourceGenerators in Compile += Def.macroValueI(resourceManaged in Compile map { _: File =>
   val src = new File("./python/pyspark_llap")
   val zipFile = new File(s"./target/pyspark_hwc-$versionString.zip")
   zipFile.delete()
   pyFilesZipRecursive(src, zipFile)
+  Seq.empty[File]
+}).value
+
+// SparkR HWC build
+resourceGenerators in Compile += Def.macroValueI(resourceManaged in Compile map { _: File =>
+  import sys.process.Process
+  import org.apache.commons.io.FileUtils
+
+  val result = Process("./R/install-dev.sh").!
+  if (result != 0) {
+    sys.error(s"R build was failed with exit code $result")
+  }
+  val srcDir = new File("./R/lib/SparkRHWC")
+  val destParent = new File(s"./target/SparkRHWC-$versionString")
+  FileUtils.deleteDirectory(destParent)
+  assert(destParent.mkdir())
+  val destDir = new File(destParent, "SparkRHWC")
+  FileUtils.copyDirectory(srcDir, destDir)
   Seq.empty[File]
 }).value
 

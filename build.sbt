@@ -268,7 +268,7 @@ assemblyShadeRules in assembly := Seq(
 )
 test in assembly := {}
 
-// R package
+// SparkRHWC package
 unmanagedResourceDirectories in Compile += baseDirectory.value
 includeFilter in (Compile, unmanagedResources) := new SimpleFileFilter(
   _.getCanonicalPath.contains("R/pkg"))
@@ -313,7 +313,6 @@ def addPyFilesToZipStream(parent: String, source: File, output: ZipOutputStream)
   }
 }
 
-// PySpark HWC build
 resourceGenerators in Compile += Def.macroValueI(resourceManaged in Compile map { _: File =>
   val src = new File("./python/pyspark_llap")
   val zipFile = new File(s"./target/pyspark_hwc-$versionString.zip")
@@ -322,7 +321,7 @@ resourceGenerators in Compile += Def.macroValueI(resourceManaged in Compile map 
   Seq.empty[File]
 }).value
 
-// SparkR HWC build
+// SparkRHWC package
 resourceGenerators in Compile += Def.macroValueI(resourceManaged in Compile map { _: File =>
   import sys.process.Process
   import org.apache.commons.io.FileUtils
@@ -359,7 +358,7 @@ artifact in (Compile, assembly) := {
 }
 addArtifact(artifact in (Compile, assembly), assembly)
 
-// R package: we're going to include R package within Jar so that
+// SparkRHWC package: we're going to include R package source within Jar so that
 // it can be automatically distributed. See `org.apache.spark.deploy.RPackageUtils`
 // in Apache Spark.
 packageOptions in assembly +=

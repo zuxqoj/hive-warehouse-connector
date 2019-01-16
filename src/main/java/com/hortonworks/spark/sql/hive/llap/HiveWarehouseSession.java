@@ -30,6 +30,26 @@ public interface HiveWarehouseSession {
     String CONF_PREFIX = SPARK_DATASOURCES_PREFIX + "." + HIVE_WAREHOUSE_POSTFIX;
 
     Dataset<Row> executeQuery(String sql);
+
+    /**
+     * Executes given query. Makes best effort to generate splits equal to total cores in spark cluster if
+     * useSplitsEqualToSparkCores is true.
+     *
+     * @param sql SQL query
+     * @param useSplitsEqualToSparkCores If true, tells HWC to try to request splits equal to cores in spark cluster.
+     * @return
+     */
+    Dataset<Row> executeQuery(String sql, boolean useSplitsEqualToSparkCores);
+
+    /**
+     * Executes given query. Makes best effort to generate splits equal to the given number(numSplitsToDemand).
+     *
+     * @param sql SQL query
+     * @param numSplitsToDemand Number of splits to be requested.
+     * @return
+     */
+    Dataset<Row> executeQuery(String sql, int numSplitsToDemand);
+
     Dataset<Row> q(String sql);
 
     Dataset<Row> execute(String sql);

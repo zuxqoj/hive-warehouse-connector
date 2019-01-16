@@ -172,8 +172,10 @@ public class HiveWarehouseDataSourceReader
     try {
       JobConf jobConf = JobUtil.createJobConf(options, query);
       LlapBaseInputFormat llapInputFormat = new LlapBaseInputFormat(false, Long.MAX_VALUE);
+      LOG.info("Additional props for generating splits: {}", options.get(JobUtil.SESSION_QUERIES_FOR_GET_NUM_SPLITS));
       //numSplits arg not currently supported, use 1 as dummy arg
       InputSplit[] splits = llapInputFormat.getSplits(jobConf, 1);
+      LOG.info("Number of splits generated: {}", splits.length);
       for (InputSplit split : splits) {
         tasks.add(getDataReaderFactory(split, jobConf, getArrowAllocatorMax()));
       }

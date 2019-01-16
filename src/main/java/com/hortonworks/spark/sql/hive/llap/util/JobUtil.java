@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 public class JobUtil {
 
   private static Logger LOG = LoggerFactory.getLogger(JobUtil.class);
+  public static final String SESSION_QUERIES_FOR_GET_NUM_SPLITS = "llap.session.queries.for.get.num.splits";
 
   public static JobConf createJobConf(Map<String, String> options, String queryString) {
     JobConf jobConf = new JobConf(SparkContext.getOrCreate().hadoopConfiguration());
@@ -36,6 +37,11 @@ public class JobUtil {
       options.put("handleid", handleId);
     }
     jobConf.set("llap.if.handleid", options.get("handleid"));
+
+    if (options.containsKey(SESSION_QUERIES_FOR_GET_NUM_SPLITS)) {
+      jobConf.set(SESSION_QUERIES_FOR_GET_NUM_SPLITS, options.get(SESSION_QUERIES_FOR_GET_NUM_SPLITS));
+    }
+
     return jobConf;
   }
 

@@ -25,13 +25,13 @@ import org.apache.spark.sql.DataFrameReader;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import com.hortonworks.spark.sql.hive.llap.util.JobUtil;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.function.Supplier;
 
 import static com.hortonworks.spark.sql.hive.llap.HWConf.*;
-import static com.hortonworks.spark.sql.hive.llap.util.HiveQlUtil.useDatabase;
 
 public class HiveWarehouseSessionImpl implements com.hortonworks.hwc.HiveWarehouseSession {
   static String HIVE_WAREHOUSE_CONNECTOR_INTERNAL = HiveWarehouseSession.HIVE_WAREHOUSE_CONNECTOR;
@@ -59,8 +59,32 @@ public class HiveWarehouseSessionImpl implements com.hortonworks.hwc.HiveWarehou
   }
 
   public Dataset<Row> executeQuery(String sql) {
+    return executeQueryInternal(sql, null);
+  }
+
+  public Dataset<Row> executeQuery(String sql, boolean useSplitsEqualToSparkCores) {
+    return executeQueryInternal(sql, getCoresInSparkCluster());
+  }
+
+  public Dataset<Row> executeQuery(String sql, int numSplitsToDemand) {
+    return executeQueryInternal(sql, numSplitsToDemand);
+  }
+
+  private Dataset<Row> executeQueryInternal(String sql, Integer numSplitsToDemand) {
     DataFrameReader dfr = session().read().format(HIVE_WAREHOUSE_CONNECTOR_INTERNAL).option("query", sql);
+    if (numSplitsToDemand != null) {
+      dfr.option(JobUtil.SESSION_QUERIES_FOR_GET_NUM_SPLITS, setSplitPropertiesQuery(numSplitsToDemand));
+    }
     return dfr.load();
+  }
+
+  private String setSplitPropertiesQuery(int numSplitsToDemand) {
+    return String.format("SET tez.grouping.split-count=%s", numSplitsToDemand);
+  }
+
+  private int getCoresInSparkCluster() {
+    //this was giving good results(number of cores) when tested in standalone and yarn mode(without dynamicAllocation)
+    return session().sparkContext().defaultParallelism();
   }
 
   public Dataset<Row> execute(String sql) {

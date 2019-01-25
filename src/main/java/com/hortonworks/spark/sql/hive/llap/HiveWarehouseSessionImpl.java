@@ -18,6 +18,7 @@
 package com.hortonworks.spark.sql.hive.llap;
 
 import com.hortonworks.hwc.MergeBuilder;
+import com.hortonworks.spark.sql.hive.llap.util.FunctionWith4Args;
 import com.hortonworks.spark.sql.hive.llap.util.HiveQlUtil;
 import com.hortonworks.spark.sql.hive.llap.util.TriFunction;
 import org.apache.spark.SparkConf;
@@ -44,6 +45,8 @@ public class HiveWarehouseSessionImpl implements com.hortonworks.hwc.HiveWarehou
 
   protected TriFunction<Connection, String, String, Boolean> executeUpdate;
 
+  protected FunctionWith4Args<Connection, String, String, Boolean, Boolean> executeUpdateWithPropagateException;
+
   public HiveWarehouseSessionImpl(HiveWarehouseSessionState sessionState) {
     this.sessionState = sessionState;
     getConnector = () -> DefaultJDBCWrapper.getConnector(sessionState);
@@ -51,6 +54,7 @@ public class HiveWarehouseSessionImpl implements com.hortonworks.hwc.HiveWarehou
       DefaultJDBCWrapper.executeStmt(conn, database, sql, MAX_EXEC_RESULTS.getInt(sessionState));
     executeUpdate = (conn, database, sql) ->
       DefaultJDBCWrapper.executeUpdate(conn, database, sql);
+    executeUpdateWithPropagateException = DefaultJDBCWrapper::executeUpdate;
     sessionState.session.listenerManager().register(new LlapQueryExecutionListener());
   }
 
@@ -97,8 +101,13 @@ public class HiveWarehouseSessionImpl implements com.hortonworks.hwc.HiveWarehou
   }
 
   public boolean executeUpdate(String sql) {
+    return executeUpdate(sql, false);
+  }
+
+  @Override
+  public boolean executeUpdate(String sql, boolean propagateException) {
     try (Connection conn = getConnector.get()) {
-      return executeUpdate.apply(conn, DEFAULT_DB.getString(sessionState), sql);
+      return executeUpdateWithPropagateException.apply(conn, DEFAULT_DB.getString(sessionState), sql, propagateException);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }

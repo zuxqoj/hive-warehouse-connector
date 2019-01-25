@@ -271,7 +271,10 @@ test in assembly := {}
 // SparkRHWC package
 unmanagedResourceDirectories in Compile += baseDirectory.value
 includeFilter in (Compile, unmanagedResources) := new SimpleFileFilter(
-  _.getCanonicalPath.contains("R/pkg"))
+  f => f.getCanonicalPath.contains("R/pkg") || f.getCanonicalPath.contains("resources/META-INF"))
+// Explicitly set the resource directory so that META-INF.service for credential providers
+// can be loaded as well.
+resourceDirectories in Compile += baseDirectory.value / "src" / "main" / "resources"
 
 assemblyMergeStrategy in assembly := {
   case PathList("org","apache","logging","log4j","core","config","plugins","Log4j2Plugins.dat") => MergeStrategy.first

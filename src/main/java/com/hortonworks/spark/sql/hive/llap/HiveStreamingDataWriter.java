@@ -115,9 +115,6 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
   }
 
   private String formatRecordForQl(InternalRow record) {
-    if (this.escapeDelimiter == null && this.quoteDelimiter == null) {
-      return RECORD_JOINER.join(scala.collection.JavaConversions.seqAsJavaList(record.toSeq(schema)));
-    }
     return RECORD_JOINER.join(HiveQlUtil.formatRecord(schema, record, escapeDelimiter, quoteDelimiter));
   }
 

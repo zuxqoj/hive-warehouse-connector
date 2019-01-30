@@ -17,7 +17,10 @@
 
 package com.hortonworks.spark.sql.hive.llap.util;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.sql.catalyst.InternalRow;
@@ -26,10 +29,15 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.unsafe.types.UTF8String;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.String.format;
 
 public class HiveQlUtil {
+  private final static Logger LOG = LoggerFactory.getLogger(HiveQlUtil.class);
+  private final static String HIVE_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";
+  private static SimpleDateFormat sdf = null;
 
   public static String projections(String[] columns) {
     return "`" + String.join("` , `", columns) + "`";
@@ -152,6 +160,16 @@ public class HiveQlUtil {
           }
           //Internally spark needs UTF8String
           obj = UTF8String.fromString(obj.toString());
+        } else if (DataTypes.TimestampType.equals(dataType)) {
+          if (obj instanceof Long) {
+            // We get from spark the time in microseconds
+            long millis = TimeUnit.MILLISECONDS.convert((Long)obj, TimeUnit.MICROSECONDS);
+            Date date = new Date(millis);
+            if (sdf == null) {
+              sdf = new SimpleDateFormat(HIVE_DATE_FORMAT);
+            }
+            obj = UTF8String.fromString(sdf.format(date));
+          }
         }
         arr[i] = obj;
       }

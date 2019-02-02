@@ -20,12 +20,12 @@ package com.hortonworks.hwc;
 import com.hortonworks.spark.sql.hive.llap.HiveWarehouseBuilder;
 import org.apache.spark.sql.SparkSession;
 
-public interface HiveWarehouseSession extends com.hortonworks.spark.sql.hive.llap.HiveWarehouseSession {
+public abstract class HiveWarehouseSession implements com.hortonworks.spark.sql.hive.llap.HiveWarehouseSession {
     String HIVE_WAREHOUSE_CONNECTOR = "com.hortonworks.spark.sql.hive.llap.HiveWarehouseConnector";
     String DATAFRAME_TO_STREAM = "com.hortonworks.spark.sql.hive.llap.HiveStreamingDataSource";
     String STREAM_TO_STREAM = "com.hortonworks.spark.sql.hive.llap.streaming.HiveStreamingDataSource";
 
-    static HiveWarehouseBuilder session(SparkSession session) {
+    public static HiveWarehouseBuilder session(SparkSession session) {
         return HiveWarehouseBuilder.session(session);
     }
 }

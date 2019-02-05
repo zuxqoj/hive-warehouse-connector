@@ -1,0 +1,139 @@
+[
+  {
+    "NumRuleInfo": [
+      {
+        "ServiceName": "DVE",
+        "NumRuleHits": "0",
+        "ErrorCount": "0",
+        "Answer": "0"
+      },
+      {
+        "ServiceName": "EWB",
+        "NumRuleHits": "8",
+        "ErrorCount": "8",
+        "Answer": null
+      },
+      {
+        "ServiceName": "TSW",
+        "NumRuleHits": "0",
+        "ErrorCount": "0",
+        "Answer": "0"
+      },
+      {
+        "ServiceName": "TRE",
+        "NumRuleHits": "2",
+        "ErrorCount": "2",
+        "Answer": "-3"
+      },
+      {
+        "ServiceName": "SDS",
+        "NumRuleHits": "2",
+        "ErrorCount": "2",
+        "Answer": "2"
+      },
+      null
+    ],
+    "NumRuleInfo2222": [
+      {
+        "ServiceName": "DVE",
+        "NumRuleHits": "0",
+        "ErrorCount": "0",
+        "Answer": "0"
+      },
+      {
+        "ServiceName": "EWB",
+        "NumRuleHits": "8",
+        "ErrorCount": "8",
+        "Answer": null
+      },
+      {
+        "ServiceName": "TSW",
+        "NumRuleHits": "0",
+        "ErrorCount": "0",
+        "Answer": "0"
+      },
+      {
+        "ServiceName": "TRE",
+        "NumRuleHits": "2",
+        "ErrorCount": "2",
+        "Answer": "-3"
+      },
+      {
+        "ServiceName": "SDS",
+        "NumRuleHits": "2",
+        "ErrorCount": "2",
+        "Answer": "2"
+      },
+      null
+    ]
+  },
+  {
+    "NumRuleInfo": [
+      {
+        "ServiceName": "DVE",
+        "NumRuleHits": "0",
+        "ErrorCount": "0",
+        "Answer": "0"
+      },
+      {
+        "ServiceName": "EWB",
+        "NumRuleHits": "8",
+        "ErrorCount": "8",
+        "Answer": null
+      },
+      {
+        "ServiceName": "TSW",
+        "NumRuleHits": "0",
+        "ErrorCount": "0",
+        "Answer": "0"
+      },
+      {
+        "ServiceName": "TRE",
+        "NumRuleHits": "2",
+        "ErrorCount": "2",
+        "Answer": "-3"
+      },
+      {
+        "ServiceName": "SDS",
+        "NumRuleHits": "2",
+        "ErrorCount": "2",
+        "Answer": "2"
+      },
+      null
+    ],
+    "NumRuleInfo2222": [
+      {
+        "ServiceName": "DVE",
+        "NumRuleHits": "0",
+        "ErrorCount": "0",
+        "Answer": "0"
+      },
+      {
+        "ServiceName": "EWB",
+        "NumRuleHits": "8",
+        "ErrorCount": "8",
+        "Answer": null
+      },
+      {
+        "ServiceName": "TSW",
+        "NumRuleHits": "0",
+        "ErrorCount": "0",
+        "Answer": "0"
+      },
+      {
+        "ServiceName": "TRE",
+        "NumRuleHits": "2",
+        "ErrorCount": "2",
+        "Answer": "-3"
+      },
+      {
+        "ServiceName": "SDS",
+        "NumRuleHits": "2",
+        "ErrorCount": "2",
+        "Answer": "2"
+      },
+      null
+    ]
+  }
+]
+

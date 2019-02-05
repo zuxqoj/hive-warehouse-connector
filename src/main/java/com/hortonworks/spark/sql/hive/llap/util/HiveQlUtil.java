@@ -36,7 +36,7 @@ import static java.lang.String.format;
 
 public class HiveQlUtil {
   private final static Logger LOG = LoggerFactory.getLogger(HiveQlUtil.class);
-  private final static String HIVE_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";
+  public final static String HIVE_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";
   private static SimpleDateFormat sdf = null;
 
   public static String projections(String[] columns) {
@@ -143,6 +143,8 @@ public class HiveQlUtil {
    * @param quoteDelimiter Quote char/string
    * @return formatted record
    */
+
+    @Deprecated /* Use com.hortonworks.spark.sql.hive.llap.StreamingRecordFormatter instead.  */
     public static Object[] formatRecord(StructType schema, InternalRow record, String escapeDelimiter, String quoteDelimiter) {
       StructField[] schemaFields = schema.fields();
       Object[] arr = new Object[record.numFields()];

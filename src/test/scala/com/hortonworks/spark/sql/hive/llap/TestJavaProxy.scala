@@ -71,6 +71,7 @@ class TestJavaProxy extends FunSuite {
   test("HiveQlUtilTest") {
     val test = new HiveQlUtilTest()
     withSetUpAndTearDown(test, test.testFormatRecord)
+    withSetUpAndTearDown(test, test.testTimestampSchemaUnsafeRow)
   }
 
   test("TestReadSupport") {
@@ -86,6 +87,15 @@ class TestJavaProxy extends FunSuite {
     withSetUpAndTearDown(test, test.testMapToHiveColumnsWithHiveColumnsNull)
     withSetUpAndTearDown(test, test.testWithDifferentColumnsInDF)
     withSetUpAndTearDown(test, test.testWithDifferentNumberOfColsInHiveAndDF)
+  }
+
+  test("StreamingRecordFormatterTest") {
+    val test = new StreamingRecordFormatterTest()
+    withSetUpAndTearDown(test, test.testSimpleTypes)
+    withSetUpAndTearDown(test, test.testStructInArray)
+    withSetUpAndTearDown(test, test.testStructInArrayMultiRowsAndCols)
+    withSetUpAndTearDown(test, test.testArrayInsideStruct)
+    withSetUpAndTearDown(test, test.testTimestampSchemaUnsafeRow)
   }
 
 }

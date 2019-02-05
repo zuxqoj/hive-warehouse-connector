@@ -1,16 +1,12 @@
 package com.hortonworks.spark.sql.hive.llap;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.List;
 
-import com.google.common.base.Joiner;
-import com.hortonworks.spark.sql.hive.llap.util.HiveQlUtil;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.conf.MetastoreConf;
 import org.apache.hadoop.hive.ql.metadata.Table;
-import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hive.streaming.HiveStreamingConnection;
 import org.apache.hive.streaming.StreamingConnection;
 import org.apache.hive.streaming.StreamingException;
@@ -18,14 +14,12 @@ import org.apache.hive.streaming.StrictDelimitedInputWriter;
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.sources.v2.writer.DataWriter;
 import org.apache.spark.sql.sources.v2.writer.WriterCommitMessage;
-import org.apache.spark.sql.types.DataType;
-import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.hortonworks.spark.sql.hive.llap.StreamingRecordFormatter.*;
 
 public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
-  public static final Joiner RECORD_JOINER = Joiner.on(",").useForNull("");
   private static Logger LOG = LoggerFactory.getLogger(HiveStreamingDataWriter.class);
 
   private String jobId;
@@ -41,8 +35,7 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
   private long commitAfterNRows;
   private long rowsWritten = 0;
   private String metastoreKrbPrincipal;
-  private String escapeDelimiter;
-  private String quoteDelimiter;
+  private StreamingRecordFormatter formatter;
 
   public HiveStreamingDataWriter(String jobId, StructType schema, long commitAfterNRows, int partitionId, long
       taskId, long epochId, String db, String table, List<String> partition, final String metastoreUri,
@@ -67,7 +60,10 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
 
   private void createStreamingConnection() throws StreamingException {
     final StrictDelimitedInputWriter strictDelimitedInputWriter = StrictDelimitedInputWriter.newBuilder()
-      .withFieldDelimiter(',').build();
+      .withFieldDelimiter((char) DEFAULT_FIELD_DELIMITER)
+        .withCollectionDelimiter((char) DEFAULT_COLLECTION_DELIMITER)
+        .withMapKeyDelimiter((char) DEFAULT_MAP_KEY_DELIMITER)
+        .build();
     HiveConf hiveConf = new HiveConf();
     hiveConf.set(MetastoreConf.ConfVars.THRIFT_URIS.getHiveName(), metastoreUri);
     // isolated classloader and shadeprefix are required for reflective instantiation of outputformat class when
@@ -93,8 +89,13 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
       .withAgentInfo(jobId + "(" + partitionId + ")")
       .connect();
     Table tableHandle = streamingConnection.getTable();
-    this.escapeDelimiter = tableHandle.getMetadata().getProperty(serdeConstants.ESCAPE_CHAR);
-    this.quoteDelimiter = tableHandle.getMetadata().getProperty(serdeConstants.QUOTE_CHAR);
+    this.formatter = new StreamingRecordFormatter.Builder(schema)
+        .withFieldDelimiter(DEFAULT_FIELD_DELIMITER)
+        .withCollectionDelimiter(DEFAULT_COLLECTION_DELIMITER)
+        .withMapKeyDelimiter(DEFAULT_MAP_KEY_DELIMITER)
+        .withNullRepresentationString(DEFAULT_NULL_REPRESENTATION_STRING)
+        .withTableProperties(tableHandle.getMetadata())
+        .build();
     streamingConnection.beginTransaction();
     LOG.info("{} created hive streaming connection.", streamingConnection.getAgentInfo());
   }
@@ -102,7 +103,7 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
   @Override
   public void write(final InternalRow record) throws IOException {
     try {
-      streamingConnection.write(formatRecordForQl(record).getBytes(Charset.forName("UTF-8")));
+      streamingConnection.write(formatRecordForQl(record).toByteArray());
       rowsWritten++;
       if (rowsWritten > 0 && commitAfterNRows > 0 && (rowsWritten % commitAfterNRows == 0)) {
         LOG.info("Committing transaction after rows: {}", rowsWritten);
@@ -114,8 +115,8 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
     }
   }
 
-  private String formatRecordForQl(InternalRow record) {
-    return RECORD_JOINER.join(HiveQlUtil.formatRecord(schema, record, escapeDelimiter, quoteDelimiter));
+  private ByteArrayOutputStream formatRecordForQl(InternalRow record) throws IOException {
+    return formatter.format(record);
   }
 
   @Override

@@ -129,7 +129,7 @@ public class HiveWarehouseSessionImpl extends com.hortonworks.hwc.HiveWarehouseS
   }
 
   private boolean executeUpdateInternal(String sql, Connection conn) {
-    return executeUpdate.apply(conn, DEFAULT_DB.getString(sessionState), sql);
+    return executeUpdateWithPropagateException.apply(conn, DEFAULT_DB.getString(sessionState), sql, true);
   }
 
   public Dataset<Row> executeInternal(String sql, Connection conn) {
@@ -187,7 +187,7 @@ public class HiveWarehouseSessionImpl extends com.hortonworks.hwc.HiveWarehouseS
   }
 
   public void createDatabase(String database, boolean ifNotExists) {
-    executeUpdate(HiveQlUtil.createDatabase(database, ifNotExists));
+    executeUpdate(HiveQlUtil.createDatabase(database, ifNotExists), true);
   }
 
   public CreateTableBuilder createTable(String tableName) {

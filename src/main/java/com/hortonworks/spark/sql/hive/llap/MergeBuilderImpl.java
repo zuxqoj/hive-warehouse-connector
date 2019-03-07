@@ -70,7 +70,7 @@ public class MergeBuilderImpl implements MergeBuilder {
 
   @Override
   public void merge() {
-    hive.executeUpdate(this.toString());
+    hive.executeUpdate(this.toString(), true);
   }
 
   @Override

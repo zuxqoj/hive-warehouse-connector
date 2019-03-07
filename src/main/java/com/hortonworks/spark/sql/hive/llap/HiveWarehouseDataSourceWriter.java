@@ -181,11 +181,11 @@ public class HiveWarehouseDataSourceWriter implements DataSourceWriter {
         database, table, mode, tableExists, createTable, loadData);
     if (createTable) {
       String createTableQuery = SchemaUtil.buildHiveCreateTableQueryFromSparkDFSchema(schema, database, table);
-      DefaultJDBCWrapper.executeUpdate(conn, database, createTableQuery);
+      DefaultJDBCWrapper.executeUpdate(conn, database, createTableQuery, true);
     }
 
     if (loadData) {
-      DefaultJDBCWrapper.executeUpdate(conn, database, loadInto(this.path.toString(), database, table));
+      DefaultJDBCWrapper.executeUpdate(conn, database, loadInto(this.path.toString(), database, table), true);
     }
   }
 

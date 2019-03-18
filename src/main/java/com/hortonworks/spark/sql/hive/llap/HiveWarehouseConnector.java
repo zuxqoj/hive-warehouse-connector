@@ -28,12 +28,6 @@ public class HiveWarehouseConnector implements DataSourceV2, ReadSupport, Sessio
 
   private static Logger LOG = LoggerFactory.getLogger(HiveWarehouseConnector.class);
 
-  //one reader per instance of HiveWarehouseConnector
-  //this will be returned everytime createReader() is invoked on same HiveWarehouseConnector instance
-  //this is to avoid the problems occurred due to multiple reader initialization.
-  //http://apache-spark-user-list.1001560.n3.nabble.com/DataSourceV2-APIs-creating-multiple-instances-of-DataSourceReader-and-hence-not-preserving-the-state-tc33646.html
-  private HiveWarehouseDataSourceReader reader = null;
-
   @Override public DataSourceReader createReader(DataSourceOptions options) {
     try {
       return getDataSourceReader(getOptions(options));
@@ -63,10 +57,7 @@ public class HiveWarehouseConnector implements DataSourceV2, ReadSupport, Sessio
   }
 
   protected DataSourceReader getDataSourceReader(Map<String, String> params) throws IOException {
-    if (reader == null) {
-      reader = new HiveWarehouseDataSourceReader(params);
-    }
-    return reader;
+    return new HiveWarehouseDataSourceReader(params);
   }
 
   protected DataSourceWriter getDataSourceWriter(String jobId, StructType schema,

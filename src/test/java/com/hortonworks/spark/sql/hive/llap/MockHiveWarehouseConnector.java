@@ -86,7 +86,7 @@ public class MockHiveWarehouseConnector extends HiveWarehouseConnector {
     }
   }
 
-  public static class MockHiveWarehouseDataSourceReader extends HiveWarehouseDataSourceReader {
+  public static class MockHiveWarehouseDataSourceReader extends PrunedFilteredHiveWarehouseDataSourceReader {
 
     public MockHiveWarehouseDataSourceReader(Map<String, String> options) throws IOException {
       super(options);

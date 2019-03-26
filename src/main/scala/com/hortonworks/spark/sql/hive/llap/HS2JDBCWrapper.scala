@@ -19,7 +19,7 @@ package com.hortonworks.spark.sql.hive.llap
 
 import java.net.URI
 import java.sql.{Connection, DatabaseMetaData, Driver, DriverManager, ResultSet, ResultSetMetaData, SQLException}
-import java.util.Properties
+import java.util.{Properties, StringJoiner}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
@@ -186,6 +186,17 @@ class JDBCWrapper {
   def dropTable(conn: Connection, dbName: String, tableName: String, ifExists: Boolean): Unit = {
     val dropTableQuery = s"DROP TABLE ${if (ifExists) "IF EXISTS " else ""}$tableName"
     executeUpdate(conn, dbName, dropTableQuery)
+  }
+
+  /**
+    * Truncates the table.
+    * @param conn JDBC connection
+    * @param dbName Database name
+    * @param tableName Table name
+    */
+  def truncateTable(conn: Connection, dbName: String, tableName: String): Unit = {
+    val truncateTableQuery = s"TRUNCATE TABLE $tableName"
+    executeUpdate(conn, dbName, truncateTableQuery)
   }
 
   def populateSchemaFields(ncols: Int,

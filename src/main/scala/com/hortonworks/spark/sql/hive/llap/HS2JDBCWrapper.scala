@@ -189,6 +189,18 @@ class JDBCWrapper {
   }
 
   /**
+    * Truncates the table.
+    * @param conn JDBC connection
+    * @param dbName Database name
+    * @param tableName Table name
+    */
+  def truncateTable(conn: Connection, dbName: String, tableName: String): Unit = {
+    val truncateTableQuery = s"TRUNCATE TABLE $tableName"
+    executeUpdate(conn, dbName, truncateTableQuery, throwOnException = true)
+  }
+
+
+  /**
     * Unsets table properties.
     * @param conn JDBC connection
     * @param dbName Database name

@@ -41,7 +41,11 @@ public enum HWConf {
   MAX_EXEC_RESULTS("exec.results.max", warehouseKey("exec.results.max"), 1000),
   LOAD_STAGING_DIR("load.staging.dir", warehouseKey("load.staging.dir"), "/tmp"),
   ARROW_ALLOCATOR_MAX("arrow.allocator.max", warehouseKey("arrow.allocator.max"), Long.MAX_VALUE),
-  COUNT_TASKS("count.tasks", warehouseKey("count.tasks"), 100);
+  COUNT_TASKS("count.tasks", warehouseKey("count.tasks"), 100),
+  //on batch write path, setting this ensures that dataframe has columns congruent to hive table
+  WRITE_PATH_STRICT_COLUMN_NAMES_MAPPING("write.path.strictColumnNamesMapping",
+    warehouseKey("write.path.strictColumnNamesMapping"), "true"),
+  ;
 
   private HWConf(String simpleKey, String qualifiedKey, Object defaultValue) {
     this.simpleKey = simpleKey;
@@ -59,6 +63,11 @@ public enum HWConf {
   public static final String HIVESERVER2_JDBC_URL = "spark.sql.hive.hiveserver2.jdbc.url";
   //possible values - client/cluster. default - client
   public static final String SPARK_SUBMIT_DEPLOYMODE = "spark.submit.deployMode";
+  public static final String PARTITION_OPTION_KEY = "partition";
+
+  public String getQualifiedKey() {
+    return qualifiedKey;
+  }
 
   public void setString(HiveWarehouseSessionState state, String value) {
     state.props.put(qualifiedKey, value);
@@ -72,7 +81,9 @@ public enum HWConf {
 
   //This is called from executors so it can't depend explicitly on session state
   public String getFromOptionsMap(Map<String, String> options) {
-    return Optional.ofNullable(options.get(simpleKey)).orElse(defaultValue == null ? null : defaultValue.toString());
+    String value = options.get(simpleKey);
+    return Optional.ofNullable(value != null ? value : options.get(simpleKey.toLowerCase()))
+        .orElse(defaultValue == null ? null : defaultValue.toString());
   }
 
   String getString(HiveWarehouseSessionState state) {

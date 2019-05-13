@@ -17,7 +17,9 @@
 
 package com.hortonworks.spark.sql.hive.llap.util;
 
-import java.util.UUID;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.sql.catalyst.InternalRow;
@@ -111,9 +113,28 @@ public class HiveQlUtil {
         return (useText ? text : "");
     }
 
-    public static String loadInto(String path, String database, String table) {
-      return format("LOAD DATA INPATH '%s' INTO TABLE %s.%s", path, database, table);
+    public static String loadInto(String path, String database, String table, boolean overwrite, String partitionSpec) {
+      StringBuilder builder = new StringBuilder("LOAD DATA INPATH ")
+          .append(wrapWithSingleQuotes(path));
+      if (overwrite) {
+        builder.append(" OVERWRITE ");
+      }
+      builder.append(" INTO TABLE ").append(database).append(".").append(table);
+
+      if (StringUtils.isNotBlank(partitionSpec)) {
+        builder.append(" PARTITION (").append(partitionSpec).append(")");
+      }
+      return builder.toString();
     }
+
+    public static String wrapWithSingleQuotes(String str) {
+      return "'" + str + "'";
+    }
+
+    public static String getCleanSqlAlias(String str) {
+      return str.replaceAll("[^A-Za-z0-9]", "_");
+    }
+
 
     public static String randomAlias() {
         return "q_" + UUID.randomUUID().toString().replaceAll("[^A-Za-z0-9 ]", "");

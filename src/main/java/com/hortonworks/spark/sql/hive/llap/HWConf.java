@@ -64,6 +64,11 @@ public enum HWConf {
   public static final String HIVESERVER2_JDBC_URL = "spark.sql.hive.hiveserver2.jdbc.url";
   //possible values - client/cluster. default - client
   public static final String SPARK_SUBMIT_DEPLOYMODE = "spark.submit.deployMode";
+  public static final String PARTITION_OPTION_KEY = "partition";
+
+  public String getQualifiedKey() {
+    return qualifiedKey;
+  }
 
   public void setString(HiveWarehouseSessionState state, String value) {
     state.props.put(qualifiedKey, value);
@@ -77,7 +82,9 @@ public enum HWConf {
 
   //This is called from executors so it can't depend explicitly on session state
   public String getFromOptionsMap(Map<String, String> options) {
-    return Optional.ofNullable(options.get(simpleKey)).orElse(defaultValue == null ? null : defaultValue.toString());
+    String value = options.get(simpleKey);
+    return Optional.ofNullable(value != null ? value : options.get(simpleKey.toLowerCase()))
+        .orElse(defaultValue == null ? null : defaultValue.toString());
   }
 
   String getString(HiveWarehouseSessionState state) {

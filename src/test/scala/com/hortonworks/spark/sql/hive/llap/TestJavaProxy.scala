@@ -17,6 +17,7 @@
 
 package com.hortonworks.spark.sql.hive.llap
 
+import com.hortonworks.spark.sql.hive.llap.query.builder.LoadDataQueryBuilderTest
 import org.scalatest.FunSuite
 
 class TestJavaProxy extends FunSuite {
@@ -83,6 +84,27 @@ class TestJavaProxy extends FunSuite {
     withSetUpAndTearDown(test, test.testMapToHiveColumnsWithHiveColumnsNull)
     withSetUpAndTearDown(test, test.testWithDifferentColumnsInDF)
     withSetUpAndTearDown(test, test.testWithDifferentNumberOfColsInHiveAndDF)
+  }
+
+  test("LoadDataQueryBuilderTest") {
+    val test = new LoadDataQueryBuilderTest()
+    withSetUpAndTearDown(test, test.testWithoutPartitions)
+    withSetUpAndTearDown(test, test.testWithoutPartitionsWithCreateTable)
+    withSetUpAndTearDown(test, test.testWithoutPartitionsWithCreateTableAndOverwrite)
+    withSetUpAndTearDown(test, test.testWithStaticPartitioning)
+    withSetUpAndTearDown(test, test.testWithDynamicPartitioning)
+    withSetUpAndTearDown(test, test.testWithStaticAndDynamicPartitioning)
+    withSetUpAndTearDown(test, test.testWithStaticDynamicPartitioningWithoutOverwrite)
+    withSetUpAndTearDown(test, test.testAllNonPartColsBeforePartColsInCreateTable)
+    withSetUpAndTearDown(test, test.testBlankPartitionIsNotRespected)
+    val thrown = intercept[IllegalArgumentException] {
+      test.testPartitionSyntaxValidation()
+    }
+    assert(thrown.getMessage.startsWith("Invalid partition spec:"))
+    withSetUpAndTearDown(test, test.testDynamicColsVsSchemaColsOrdering)
+    withSetUpAndTearDown(test, test.testStaticPartWithValidateAgainstHiveColumns)
+    withSetUpAndTearDown(test, test.testPartitionColsOrderWhenNoPartSpec)
+    withSetUpAndTearDown(test, test.testDynamicPartitionColsOrderSimilarToHive)
   }
 
 }

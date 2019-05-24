@@ -51,6 +51,6 @@ public class HiveQlUtilTest extends SessionTestBase {
         .add("c2", "timestamp");
 
     Object[] formatted = formatRecord(timeSchema, record, null, null);
-    Assert.assertEquals(new Object[]{1, UTF8String.fromString("2019-01-29 17:25:52.012")}, formatted);
+    Assert.assertEquals(new Object[]{1, UTF8String.fromString("2019-01-30 01:25:52.012")}, formatted);
   }
 }

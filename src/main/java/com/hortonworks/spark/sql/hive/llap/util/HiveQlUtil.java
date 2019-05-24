@@ -20,6 +20,7 @@ package com.hortonworks.spark.sql.hive.llap.util;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
@@ -186,6 +187,7 @@ public class HiveQlUtil {
             Date date = new Date(millis);
             if (sdf == null) {
               sdf = new SimpleDateFormat(HIVE_DATE_FORMAT);
+              sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
             }
             obj = UTF8String.fromString(sdf.format(date));
           }

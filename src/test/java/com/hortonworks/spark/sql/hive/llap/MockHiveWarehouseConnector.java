@@ -35,9 +35,14 @@ public class MockHiveWarehouseConnector extends HiveWarehouseConnector {
   public static Map<String, Object> writeOutputBuffer = new HashMap<>();
   public static long COUNT_STAR_TEST_VALUE = 1024;
 
+  private MockHiveWarehouseDataSourceReader reader;
+
   @Override
   protected DataSourceReader getDataSourceReader(Map<String, String> params) throws IOException {
-    return new MockHiveWarehouseDataSourceReader(params);
+    if (reader == null) {
+      reader = new MockHiveWarehouseDataSourceReader(params);
+    }
+    return reader;
   }
 
   @Override

@@ -32,13 +32,18 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.catalyst.InternalRow;
-import org.apache.spark.sql.sources.v2.writer.DataSourceWriter;
 import org.apache.spark.sql.sources.v2.writer.DataWriterFactory;
+import org.apache.spark.sql.sources.v2.writer.SupportsWriteInternalRow;
 import org.apache.spark.sql.sources.v2.writer.WriterCommitMessage;
 import org.apache.spark.sql.types.StructType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
+
+import java.sql.Connection;
+import java.util.Map;
+
+import static com.hortonworks.spark.sql.hive.llap.util.HiveQlUtil.loadInto;
 
 /**
  * Data source writer implementation to facilitate creation of {@link DataWriterFactory} and drive the writing process.
@@ -61,7 +66,7 @@ import scala.Option;
  * <br/>
  * 2.3) Order of columns in dataframe is different to that of in hive table.
  */
-public class HiveWarehouseDataSourceWriter implements DataSourceWriter {
+public class HiveWarehouseDataSourceWriter implements SupportsWriteInternalRow {
   protected String jobId;
   protected StructType schema;
   private SaveMode mode;
@@ -102,7 +107,7 @@ public class HiveWarehouseDataSourceWriter implements DataSourceWriter {
   }
 
   @Override
-  public DataWriterFactory<InternalRow> createWriterFactory() {
+  public DataWriterFactory<InternalRow> createInternalRowWriterFactory() {
     String hiveCols[] = null;
     try (Connection connection = getConnection()) {
       this.tableExists = DefaultJDBCWrapper.tableExists(connection, databaseName, tableName);
@@ -123,18 +128,6 @@ public class HiveWarehouseDataSourceWriter implements DataSourceWriter {
     this.sparkToHiveRecordMapper = new SparkToHiveRecordMapper(schema, hiveCols);
     return new HiveWarehouseDataWriterFactory(jobId, schema, path, new SerializableHadoopConfiguration(conf), sparkToHiveRecordMapper);
   }
-
-  //uses output coordinator to ensure atmost one task commit for a partition
-  @Override
-  public boolean useCommitCoordinator() {
-    return true;
-  }
-
-  @Override
-  public void onDataWriterCommit(WriterCommitMessage message) {
-    //nothing to do/clean up as of now
-  }
-
 
   @Override public void commit(WriterCommitMessage[] messages) {
     try {

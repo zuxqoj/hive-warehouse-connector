@@ -19,14 +19,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.hortonworks.spark.sql.hive.llap.StreamingRecordFormatter.*;
 
+import com.google.common.base.Joiner;
+
 public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
   private static Logger LOG = LoggerFactory.getLogger(HiveStreamingDataWriter.class);
 
   private String jobId;
   private StructType schema;
   private int partitionId;
-  private long taskId;
-  private long epochId;
+  private int attemptNumber;
   private String db;
   private String table;
   private List<String> partition;
@@ -37,14 +38,13 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
   private String metastoreKrbPrincipal;
   private StreamingRecordFormatter formatter;
 
-  public HiveStreamingDataWriter(String jobId, StructType schema, long commitAfterNRows, int partitionId, long
-      taskId, long epochId, String db, String table, List<String> partition, final String metastoreUri,
+  public HiveStreamingDataWriter(String jobId, StructType schema, long commitAfterNRows, int partitionId, int
+    attemptNumber, String db, String table, List<String> partition, final String metastoreUri,
     final String metastoreKrbPrincipal) {
     this.jobId = jobId;
     this.schema = schema;
     this.partitionId = partitionId;
-    this.taskId = taskId;
-    this.epochId = epochId;
+    this.attemptNumber = attemptNumber;
     this.db = db;
     this.table = table;
     this.partition = partition;
@@ -126,8 +126,8 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
     } catch (StreamingException e) {
       throw new IOException(e);
     }
-    String msg = "Committed jobId: " + jobId + " partitionId: " + partitionId + " taskId: " + taskId +
-        " epochId: " + epochId + " connectionStats: " + streamingConnection.getConnectionStats();
+    String msg = "Committed jobId: " + jobId + " partitionId: " + partitionId + " attemptNumber: " + attemptNumber +
+      " connectionStats: " + streamingConnection.getConnectionStats();
     streamingConnection.close();
     LOG.info("Closing streaming connection on commit. Msg: {} rowsWritten: {}", rowsWritten);
     return new SimpleWriterCommitMessage(msg);
@@ -141,8 +141,8 @@ public class HiveStreamingDataWriter implements DataWriter<InternalRow> {
       } catch (StreamingException e) {
         throw new IOException(e);
       }
-      String msg = "Aborted jobId: " + jobId + " partitionId: " + partitionId + " taskId: " + taskId +
-          " epochId: " + epochId + " connectionStats: " + streamingConnection.getConnectionStats();
+      String msg = "Aborted jobId: " + jobId + " partitionId: " + partitionId + " attemptNumber: " + attemptNumber +
+        " connectionStats: " + streamingConnection.getConnectionStats();
       streamingConnection.close();
       LOG.info("Closing streaming connection on abort. Msg: {} rowsWritten: {}", msg, rowsWritten);
     }

@@ -1,28 +1,35 @@
 package com.hortonworks.spark.sql.hive.llap;
 
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
 import com.hortonworks.spark.sql.hive.llap.util.JobUtil;
 import com.hortonworks.spark.sql.hive.llap.util.SchemaUtil;
 import org.apache.hadoop.hive.llap.LlapBaseInputFormat;
-import org.apache.hadoop.hive.llap.LlapInputSplit;
-import org.apache.hadoop.hive.llap.Schema;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.sql.sources.Filter;
-import org.apache.spark.sql.sources.v2.reader.*;
+import org.apache.spark.sql.sources.v2.reader.DataReaderFactory;
+import org.apache.spark.sql.sources.v2.reader.DataSourceReader;
+import org.apache.spark.sql.sources.v2.reader.SupportsPushDownFilters;
+import org.apache.spark.sql.sources.v2.reader.SupportsPushDownRequiredColumns;
+import org.apache.spark.sql.sources.v2.reader.SupportsScanColumnarBatch;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.sql.vectorized.ColumnarBatch;
+import org.apache.hadoop.hive.llap.LlapInputSplit;
+import org.apache.hadoop.hive.llap.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
 import scala.collection.Seq;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Map;
 
 import static com.hortonworks.spark.sql.hive.llap.FilterPushdown.buildWhereClause;
 import static com.hortonworks.spark.sql.hive.llap.util.HiveQlUtil.*;
@@ -143,16 +150,16 @@ public class HiveWarehouseDataSourceReader
     this.schema = requiredSchema;
   }
 
-  @Override public List<InputPartition<ColumnarBatch>> planBatchInputPartitions() {
+  @Override public List<DataReaderFactory<ColumnarBatch>> createBatchDataReaderFactories() {
     try {
       boolean countStar = this.schema.length() == 0;
       String queryString = getQueryString(SchemaUtil.columnNames(schema), pushedFilters);
-      List<InputPartition<ColumnarBatch>> factories = new ArrayList<>();
+      List<DataReaderFactory<ColumnarBatch>> factories = new ArrayList<>();
       if (countStar) {
         LOG.info("Executing count with query: {}", queryString);
-        factories.addAll(getCountStarInputPartitions(queryString));
+        factories.addAll(getCountStarFactories(queryString));
       } else {
-        factories.addAll(getSplitsInputPartitions(queryString));
+        factories.addAll(getSplitsFactories(queryString));
       }
       return factories;
     } catch (Exception e) {
@@ -160,8 +167,8 @@ public class HiveWarehouseDataSourceReader
     }
   }
 
-  protected List<InputPartition<ColumnarBatch>> getSplitsInputPartitions(String query) {
-    List<InputPartition<ColumnarBatch>> tasks = new ArrayList<>();
+  protected List<DataReaderFactory<ColumnarBatch>> getSplitsFactories(String query) {
+    List<DataReaderFactory<ColumnarBatch>> tasks = new ArrayList<>();
     try {
       JobConf jobConf = JobUtil.createJobConf(options, query);
       LlapBaseInputFormat llapInputFormat = new LlapBaseInputFormat(false, Long.MAX_VALUE);
@@ -170,7 +177,7 @@ public class HiveWarehouseDataSourceReader
       InputSplit[] splits = llapInputFormat.getSplits(jobConf, 1);
       LOG.info("Number of splits generated: {}", splits.length);
       for (InputSplit split : splits) {
-        tasks.add(getInputPartition(split, jobConf, getArrowAllocatorMax()));
+        tasks.add(getDataReaderFactory(split, jobConf, getArrowAllocatorMax()));
       }
     } catch (IOException e) {
       LOG.error("Unable to submit query to HS2");
@@ -179,21 +186,21 @@ public class HiveWarehouseDataSourceReader
     return tasks;
   }
 
-  protected HiveWarehouseInputPartition getInputPartition(InputSplit split, JobConf jobConf, long arrowAllocatorMax) {
-    return new HiveWarehouseInputPartition(split, jobConf, arrowAllocatorMax);
+  protected DataReaderFactory<ColumnarBatch> getDataReaderFactory(InputSplit split, JobConf jobConf, long arrowAllocatorMax) {
+    return new HiveWarehouseDataReaderFactory(split, jobConf, arrowAllocatorMax);
   }
 
-  private List<InputPartition<ColumnarBatch>> getCountStarInputPartitions(String query) {
-    List<InputPartition<ColumnarBatch>> tasks = new ArrayList<>(100);
+  private List<DataReaderFactory<ColumnarBatch>> getCountStarFactories(String query) {
+    List<DataReaderFactory<ColumnarBatch>> tasks = new ArrayList<>(100);
     long count = getCount(query);
     String numTasksString = HWConf.COUNT_TASKS.getFromOptionsMap(options);
     int numTasks = Integer.parseInt(numTasksString);
     long numPerTask = count/(numTasks - 1);
     long numLastTask = count % (numTasks - 1);
     for(int i = 0; i < (numTasks - 1); i++) {
-      tasks.add(new CountInputPartition(numPerTask));
+      tasks.add(new CountDataReaderFactory(numPerTask));
     }
-    tasks.add(new CountInputPartition(numLastTask));
+    tasks.add(new CountDataReaderFactory(numLastTask));
     return tasks;
   }
 

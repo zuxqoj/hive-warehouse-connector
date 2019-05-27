@@ -1,17 +1,16 @@
 package com.hortonworks.spark.sql.hive.llap;
 
 import java.io.IOException;
-
-import org.apache.spark.sql.execution.vectorized.OnHeapColumnVector;
-import org.apache.spark.sql.sources.v2.reader.InputPartitionReader;
-import org.apache.spark.sql.types.DataTypes;
-import org.apache.spark.sql.vectorized.ColumnVector;
 import org.apache.spark.sql.vectorized.ColumnarBatch;
+import org.apache.spark.sql.execution.vectorized.OnHeapColumnVector;
+import org.apache.spark.sql.sources.v2.reader.DataReader;
+import org.apache.spark.sql.vectorized.ColumnVector;
+import org.apache.spark.sql.types.DataTypes;
 
-public class CountInputPartitionReader implements InputPartitionReader<ColumnarBatch> {
+public class CountDataReader implements DataReader<ColumnarBatch> {
   private long numRows;
 
-  public CountInputPartitionReader(long numRows) {
+  public CountDataReader(long numRows) {
     this.numRows = numRows;
   }
 

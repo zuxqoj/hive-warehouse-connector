@@ -30,10 +30,7 @@ import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.sources.v2.DataSourceOptions;
 import org.apache.spark.sql.sources.v2.DataSourceV2;
 import org.apache.spark.sql.sources.v2.WriteSupport;
-import org.apache.spark.sql.sources.v2.writer.DataSourceWriter;
-import org.apache.spark.sql.sources.v2.writer.DataWriter;
-import org.apache.spark.sql.sources.v2.writer.DataWriterFactory;
-import org.apache.spark.sql.sources.v2.writer.WriterCommitMessage;
+import org.apache.spark.sql.sources.v2.writer.*;
 import org.apache.spark.sql.types.StructType;
 import static com.hortonworks.spark.sql.hive.llap.StreamingRecordFormatter.*;
 
@@ -80,7 +77,7 @@ public class DummyStreamingDataSource implements DataSourceV2, WriteSupport, Ser
     }
   }
 
-  public class DummySteamingDataSourceWriter implements DataSourceWriter, Serializable {
+  public class DummySteamingDataSourceWriter implements SupportsWriteInternalRow, Serializable {
 
     private StructType schema;
 
@@ -89,10 +86,10 @@ public class DummyStreamingDataSource implements DataSourceV2, WriteSupport, Ser
     }
 
     @Override
-    public DataWriterFactory<InternalRow> createWriterFactory() {
+    public DataWriterFactory<InternalRow> createInternalRowWriterFactory() {
       return new DataWriterFactory<InternalRow>() {
         @Override
-        public DataWriter<InternalRow> createDataWriter(int partitionId, long taskId, long epochId) {
+        public DataWriter<InternalRow> createDataWriter(int partitionId, int attemptNumber) {
           return new DummyStreamingDataWriter(schema);
         }
       };

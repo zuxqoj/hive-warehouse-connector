@@ -24,20 +24,18 @@ public class HiveWarehouseDataWriter implements DataWriter<InternalRow> {
   private String jobId;
   private StructType schema;
   private int partitionId;
-  private long taskId;
-  private long epochId;
+  private int attemptNumber;
   private FileSystem fs;
   private Path filePath;
   private OutputWriter out;
   private SparkToHiveRecordMapper sparkToHiveRecordMapper;
 
   public HiveWarehouseDataWriter(Configuration conf, String jobId, StructType schema,
-      int partitionId, long taskId, long epochId, FileSystem fs, Path filePath, SparkToHiveRecordMapper sparkToHiveRecordMapper) {
+      int partitionId, int attemptNumber, FileSystem fs, Path filePath, SparkToHiveRecordMapper sparkToHiveRecordMapper) {
     this.jobId = jobId;
     this.schema = schema;
     this.partitionId = partitionId;
-    this.taskId = taskId;
-    this.epochId = epochId;
+    this.attemptNumber = attemptNumber;
     this.fs = fs;
     this.filePath = filePath;
     this.sparkToHiveRecordMapper = sparkToHiveRecordMapper;
@@ -52,11 +50,11 @@ public class HiveWarehouseDataWriter implements DataWriter<InternalRow> {
 
   @Override public WriterCommitMessage commit() throws IOException {
     out.close();
-    return new SimpleWriterCommitMessage(String.format("COMMIT %s_%s_%s_%s", jobId, partitionId, taskId, epochId));
+    return new SimpleWriterCommitMessage(String.format("COMMIT %s_%s_%s", jobId, partitionId, attemptNumber));
   }
 
   @Override public void abort() throws IOException {
-    LOG.info("Driver sent abort for {}_{}_{}_{}", jobId, partitionId, taskId, epochId);
+    LOG.info("Driver sent abort for {}_{}_{}", jobId, partitionId, attemptNumber);
     try {
       out.close();
     } finally {

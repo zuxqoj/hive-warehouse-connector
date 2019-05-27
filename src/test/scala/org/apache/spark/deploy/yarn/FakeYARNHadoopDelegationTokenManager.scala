@@ -33,4 +33,4 @@ class FakeYARNHadoopDelegationTokenManager(
     sparkConf: SparkConf,
     hadoopConf: Configuration,
     fileSystems: Configuration => Set[FileSystem])
-  extends YARNHadoopDelegationTokenManager(sparkConf, hadoopConf)
+  extends YARNHadoopDelegationTokenManager(sparkConf, hadoopConf, fileSystems)

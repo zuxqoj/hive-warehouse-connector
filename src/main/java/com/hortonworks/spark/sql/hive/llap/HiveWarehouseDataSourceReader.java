@@ -1,5 +1,6 @@
 package com.hortonworks.spark.sql.hive.llap;
 
+import com.google.common.base.Preconditions;
 import com.hortonworks.spark.sql.hive.llap.util.JobUtil;
 import com.hortonworks.spark.sql.hive.llap.util.SchemaUtil;
 import org.apache.hadoop.hive.llap.LlapBaseInputFormat;
@@ -51,8 +52,11 @@ public class HiveWarehouseDataSourceReader implements DataSourceReader, Supports
 
   private static Logger LOG = LoggerFactory.getLogger(HiveWarehouseDataSourceReader.class);
 
+  private final String sessionId;
+
   public HiveWarehouseDataSourceReader(Map<String, String> options) throws IOException {
     this.options = options;
+    sessionId = getCurrentSessionId();
   }
 
   //if(schema is empty) -> df.count()
@@ -77,6 +81,13 @@ public class HiveWarehouseDataSourceReader implements DataSourceReader, Supports
 
   private StatementType getQueryType() throws Exception {
     return StatementType.fromOptions(options);
+  }
+
+  private String getCurrentSessionId() {
+    String sessionId = options.get(HiveWarehouseSessionImpl.HWC_SESSION_ID_KEY);
+    Preconditions.checkNotNull(sessionId,
+        "session id cannot be null, forgot to initialize HiveWarehouseSession???");
+    return sessionId;
   }
 
   protected StructType getTableSchema() throws Exception {
@@ -155,6 +166,9 @@ public class HiveWarehouseDataSourceReader implements DataSourceReader, Supports
     } catch (IOException e) {
       LOG.error("Unable to submit query to HS2");
       throw new RuntimeException(e);
+    } finally {
+      // add handle id for HiveWarehouseSessionImpl#close()
+      HiveWarehouseSessionImpl.addResourceIdToSession(sessionId, options.get(JobUtil.LLAP_HANDLE_ID));
     }
     return tasks;
   }
@@ -206,9 +220,8 @@ public class HiveWarehouseDataSourceReader implements DataSourceReader, Supports
   }
 
   public void close() {
-    LOG.info("Closing resources for handleid: {}", options.get("handleid"));
     try {
-      LlapBaseInputFormat.close(options.get("handleid"));
+      HiveWarehouseSessionImpl.closeAndRemoveResourceFromSession(sessionId, options.get(JobUtil.LLAP_HANDLE_ID));
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }

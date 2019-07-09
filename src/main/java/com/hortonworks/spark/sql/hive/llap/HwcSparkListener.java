@@ -20,6 +20,8 @@ package com.hortonworks.spark.sql.hive.llap;
 import org.apache.hadoop.hive.llap.LlapBaseInputFormat;
 import org.apache.spark.scheduler.SparkListener;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * HwcSparkListener - Handles various events throughout the lifecycle of spark application.
@@ -28,6 +30,8 @@ import org.apache.spark.scheduler.SparkListenerApplicationEnd;
  * If we need to send some custom events, we can do it by pushing them to sparkContext().listenerBus()
  */
 public class HwcSparkListener extends SparkListener {
+
+  private static Logger LOG = LoggerFactory.getLogger(HwcSparkListener.class);
 
   @Override
   public void onApplicationEnd(SparkListenerApplicationEnd applicationEnd) {

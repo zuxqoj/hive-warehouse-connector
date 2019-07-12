@@ -295,6 +295,7 @@ assemblyMergeStrategy in assembly := {
   case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.first
   case PathList("git.properties") => MergeStrategy.first
   case PathList("META-INF", "services", "org.apache.hadoop.fs.FileSystem") => MergeStrategy.discard
+  case PathList("META-INF", "services", "org.apache.hadoop.security.token.TokenIdentifier") => MergeStrategy.discard
   case x if x.endsWith("package-info.class") => MergeStrategy.first
   case PathList("META-INF", "services", xs @ _*) => MergeStrategy.first
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard

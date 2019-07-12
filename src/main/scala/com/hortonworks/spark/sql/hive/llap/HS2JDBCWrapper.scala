@@ -40,10 +40,23 @@ import org.slf4j.LoggerFactory
 object Utils {
   def classForName(className: String): Class[_] = {
     // scalastyle:off classforname
+try{
+
     Class.forName(
       className,
       true,
       Option(Thread.currentThread().getContextClassLoader).getOrElse(getClass.getClassLoader))
+} catch{
+	case cne:java.lang.ClassNotFoundException => {
+		Class.forName(
+      			className,
+      			true,
+      			getClass.getClassLoader)
+
+	}
+}
+
+
     // scalastyle:on classforname
   }
 }

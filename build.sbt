@@ -4,16 +4,16 @@ import java.util.zip.{ZipEntry, ZipOutputStream}
 
 
 name := "hive-warehouse-connector"
-val versionString = sys.props.getOrElse("version", "1.0.0-SNAPSHOT")
+val versionString = sys.props.getOrElse("version", "1.0.58-SNAPSHOT")
 version := versionString
 organization := "com.hortonworks.hive"
 scalaVersion := "2.11.8"
 val scalatestVersion = "2.2.6"
 
-sparkVersion := sys.props.getOrElse("spark.version", "2.3.0")
+sparkVersion := sys.props.getOrElse("spark.version", "2.3.2.3.1.0.0-78")
 
-val hadoopVersion = sys.props.getOrElse("hadoop.version", "3.0.0")
-val hiveVersion = sys.props.getOrElse("hive.version", "3.0.0")
+val hadoopVersion = sys.props.getOrElse("hadoop.version", "3.1.1.3.1.0.0-78")
+val hiveVersion = sys.props.getOrElse("hive.version", "3.1.0.3.1.0.0-78")
 val log4j2Version = sys.props.getOrElse("log4j2.version", "2.4.1")
 val tezVersion = sys.props.getOrElse("tez.version", "0.9.1")
 val thriftVersion = sys.props.getOrElse("thrift.version", "0.9.3")
@@ -61,6 +61,7 @@ libraryDependencies ++= Seq(
     .exclude("commons-beanutils", "commons-beanutils-core")
     .exclude("javax.servlet", "servlet-api")
     .exclude("stax", "stax-api")
+    .exclude("dnsjava", "dnsjava")
     .exclude("org.apache.avro", "avro"),
 
   ("org.apache.tez" % "tez-runtime-internals" % tezVersion % "compile")
@@ -77,11 +78,18 @@ libraryDependencies ++= Seq(
     .exclude("org.apache.hadoop", "hadoop-hdfs")
     .exclude("com.fasterxml.jackson.core", "jackson-databind"),
   ("org.apache.hive" % "hive-service" % hiveVersion)
+    .exclude("dnsjava", "dnsjava")
+    .exclude("org.codehaus.janino", "janino")
+    .exclude("org.codehaus.janino", "commons-compiler")
     .exclude("org.apache.hadoop", "hadoop-aws")
     .exclude("org.apache.logging.log4j", "log4j-slf4j-impl")
     .exclude("com.fasterxml.jackson.core", "jackson-databind")
-    .exclude("org.apache.hadoop", "hadoop-aws"),
+    .exclude("org.apache.hadoop", "hadoop-aws")
+    .exclude("org.apache.hadoop", "hadoop-hdfs"),
   ("org.apache.hive" % "hive-llap-ext-client" % hiveVersion)
+    .exclude("org.codehaus.janino", "janino")
+    .exclude("org.codehaus.janino", "commons-compiler")
+    .exclude("dnsjava", "dnsjava")
     .exclude("ant", "ant")
     .exclude("org.apache.ant", "ant")
     .exclude("org.apache.avro", "avro")
@@ -133,6 +141,9 @@ libraryDependencies ++= Seq(
     .exclude("org.apache.arrow", "arrow-memory"),
 //Use ParserUtils to validate generated HiveQl strings in tests
   ("org.apache.hive" % "hive-exec" % hiveVersion % "test")
+    .exclude("dnsjava", "dnsjava")
+    .exclude("org.codehaus.janino", "janino")
+    .exclude("org.codehaus.janino", "commons-compiler")
     .exclude("ant", "ant")
     .exclude("com.fasterxml.jackson.core", "jackson-databind")
     .exclude("org.apache.ant", "ant")
@@ -183,6 +194,9 @@ libraryDependencies ++= Seq(
     .exclude("org.apache.arrow", "arrow-format")
     .exclude("org.apache.arrow", "arrow-memory"),
   ("org.apache.hive" % "hive-streaming" % hiveVersion)
+    .exclude("dnsjava", "dnsjava")
+    .exclude("org.codehaus.janino", "janino")
+    .exclude("org.codehaus.janino", "commons-compiler")
     .exclude("ant", "ant")
     .exclude("org.apache.ant", "ant")
     .exclude("org.apache.avro", "avro")

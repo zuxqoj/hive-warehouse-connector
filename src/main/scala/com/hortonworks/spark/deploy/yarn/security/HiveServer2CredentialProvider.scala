@@ -44,6 +44,10 @@ private[security] class HiveServer2CredentialProvider extends ServiceCredentialP
       sparkConf: SparkConf,
       creds: Credentials): Option[Long] = {
 
+    logInfo("HiveServer2CredentialProvider spark.sql.hive.hiveserver2.jdbc.url:: " + sparkConf.get("spark.sql.hive.hiveserver2.jdbc.url","default"));
+
+    logInfo("HiveServer2CredentialProvider spark.sql.hive.hiveserver2.jdbc.url.principal:: " + sparkConf.get("spark.sql.hive.hiveserver2.jdbc.url.principal","default"));
+
     JobUtil.replaceSparkHiveDriver();
     var con: Connection = null
     try {
@@ -57,13 +61,21 @@ private[security] class HiveServer2CredentialProvider extends ServiceCredentialP
       }
 
       val hs2Url = sparkConf.get("spark.sql.hive.hiveserver2.jdbc.url")
-      val principal = sparkConf.get("spark.sql.hive.hiveserver2.jdbc.url.principal")
       require(hs2Url != null, "spark.sql.hive.hiveserver2.jdbc.url is not configured.")
-      require(principal != null,
-        "spark.sql.hive.hiveserver2.jdbc.url.principal is not configured.")
 
-      val jdbcUrl = s"$hs2Url;principal=$principal"
-      logInfo(s"Getting HS2 delegation token for $userName via $jdbcUrl")
+    var principal = "";
+    var jdbcUrl = hs2Url;
+    if (hs2Url.contains("principal=")){
+		  // TODO add handling for some config after principal
+		  principal = hs2Url.split("principal=")(1)
+    }else{
+      val principal = sparkConf.get("spark.sql.hive.hiveserver2.jdbc.url.principal")
+      require(principal != null,
+      "spark.sql.hive.hiveserver2.jdbc.url.principal is not configured.")
+
+      jdbcUrl = s"$hs2Url;principal=$principal"
+    }
+    logInfo(s"Getting HS2 delegation token for $userName via $jdbcUrl")
 
       doAsRealUser {
         con = DriverManager.getConnection(jdbcUrl)
@@ -90,6 +102,8 @@ private[security] class HiveServer2CredentialProvider extends ServiceCredentialP
       Some(System.currentTimeMillis() + checkInterval)
     }
   }
+
+
 
   /**
    * Run some code as the real logged in user (which may differ from the current user, for

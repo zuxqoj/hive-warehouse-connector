@@ -4,18 +4,19 @@ import java.util.zip.{ZipEntry, ZipOutputStream}
 
 
 name := "hive-warehouse-connector"
-val versionString = sys.props.getOrElse("version", "1.0.0-SNAPSHOT")
+val versionString = sys.props.getOrElse("version", "1.0.0.3.1.0.0-78-sb25")
 version := versionString
 organization := "com.hortonworks.hive"
 scalaVersion := "2.11.8"
 val scalatestVersion = "2.2.6"
 
-sparkVersion := sys.props.getOrElse("spark.version", "2.3.0")
+sparkVersion := sys.props.getOrElse("spark.version", "2.3.2.3.1.0.0-78")
 
-val hadoopVersion = sys.props.getOrElse("hadoop.version", "3.0.0")
-val hiveVersion = sys.props.getOrElse("hive.version", "3.0.0")
+val hadoopVersion = sys.props.getOrElse("hadoop.version", "3.1.1.3.1.0.0-78")
+val hiveVersion = sys.props.getOrElse("hive.version", "3.1.0.3.1.0.0-78")
+//val hiveVersion = sys.props.getOrElse("hive.version", "3.1.0.3.1.0.78-4")
 val log4j2Version = sys.props.getOrElse("log4j2.version", "2.4.1")
-val tezVersion = sys.props.getOrElse("tez.version", "0.9.1")
+val tezVersion = sys.props.getOrElse("tez.version", "0.9.1.3.1.0.0-78")
 val thriftVersion = sys.props.getOrElse("thrift.version", "0.9.3")
 val repoUrl = sys.props.getOrElse("repourl", "https://repo1.maven.org/maven2/")
 
@@ -53,6 +54,7 @@ libraryDependencies ++= Seq(
     .exclude("org.apache.avro", "avro")
     .exclude("commons-beanutils", "commons-beanutils-core")
     .exclude("commons-collections", "commons-collections")
+    .exclude("com.google.protobuf", "protobuf-java")
     .exclude("commons-logging", "commons-logging"),
 
   ("org.apache.hadoop" % "hadoop-yarn-registry" % hadoopVersion % "provided")
@@ -61,6 +63,8 @@ libraryDependencies ++= Seq(
     .exclude("commons-beanutils", "commons-beanutils-core")
     .exclude("javax.servlet", "servlet-api")
     .exclude("stax", "stax-api")
+    .exclude("dnsjava", "dnsjava")
+    .exclude("com.google.protobuf", "protobuf-java")
     .exclude("org.apache.avro", "avro"),
 
   ("org.apache.tez" % "tez-runtime-internals" % tezVersion % "compile")
@@ -75,13 +79,29 @@ libraryDependencies ++= Seq(
     .exclude("org.apache.hadoop", "hadoop-annotations")
     .exclude("org.apache.hadoop", "hadoop-auth")
     .exclude("org.apache.hadoop", "hadoop-hdfs")
+    .exclude("com.google.protobuf", "protobuf-java")
+    .exclude("org.apache.arrow", "arrow-vector")
     .exclude("com.fasterxml.jackson.core", "jackson-databind"),
-  ("org.apache.hive" % "hive-service" % hiveVersion)
+
+   ("org.apache.hive" % "hive-service" % hiveVersion)
+    .exclude("dnsjava", "dnsjava")
+    .exclude("org.codehaus.janino", "janino")
+    .exclude("org.codehaus.janino", "commons-compiler")
+    .exclude("org.apache.calcite", "calcite-core")
+    .exclude("org.apache.calcite.avatica", "avatica")
     .exclude("org.apache.hadoop", "hadoop-aws")
     .exclude("org.apache.logging.log4j", "log4j-slf4j-impl")
     .exclude("com.fasterxml.jackson.core", "jackson-databind")
-    .exclude("org.apache.hadoop", "hadoop-aws"),
+    .exclude("com.google.protobuf", "protobuf-java")
+    .exclude("org.apache.arrow", "arrow-vector")
+    .exclude("org.apache.hadoop", "hadoop-aws")
+    .exclude("org.apache.hadoop", "hadoop-hdfs"),
   ("org.apache.hive" % "hive-llap-ext-client" % hiveVersion)
+    .exclude("org.codehaus.janino", "janino")
+    .exclude("org.codehaus.janino", "commons-compiler")
+    .exclude("org.apache.calcite", "calcite-core")
+    .exclude("org.apache.calcite.avatica", "avatica")
+    .exclude("dnsjava", "dnsjava")
     .exclude("ant", "ant")
     .exclude("org.apache.ant", "ant")
     .exclude("org.apache.avro", "avro")
@@ -128,11 +148,18 @@ libraryDependencies ++= Seq(
     .exclude("io.netty", "netty-buffer")
     .exclude("io.netty", "netty-common")
     .exclude("com.fasterxml.jackson.core", "jackson-databind")
+    .exclude("com.google.protobuf", "protobuf-java")
+    .exclude("org.apache.arrow", "arrow-vector")
     .exclude("org.apache.arrow", "arrow-vector")
     .exclude("org.apache.arrow", "arrow-format")
     .exclude("org.apache.arrow", "arrow-memory"),
+
 //Use ParserUtils to validate generated HiveQl strings in tests
   ("org.apache.hive" % "hive-exec" % hiveVersion % "test")
+    .exclude("dnsjava", "dnsjava")
+    .exclude("org.codehaus.janino", "janino")
+    .exclude("org.codehaus.janino", "commons-compiler")
+    .exclude("org.apache.calcite", "calcite-core")
     .exclude("ant", "ant")
     .exclude("com.fasterxml.jackson.core", "jackson-databind")
     .exclude("org.apache.ant", "ant")
@@ -179,10 +206,18 @@ libraryDependencies ++= Seq(
     .exclude("commons-logging", "commons-logging") 
     .exclude("io.netty", "netty-buffer")
     .exclude("io.netty", "netty-common")
+    .exclude("com.google.protobuf", "protobuf-java")
+    .exclude("org.apache.arrow", "arrow-vector")
     .exclude("org.apache.arrow", "arrow-vector")
     .exclude("org.apache.arrow", "arrow-format")
     .exclude("org.apache.arrow", "arrow-memory"),
+
   ("org.apache.hive" % "hive-streaming" % hiveVersion)
+    .exclude("dnsjava", "dnsjava")
+    .exclude("org.codehaus.janino", "janino")
+    .exclude("org.codehaus.janino", "commons-compiler")
+    .exclude("org.apache.calcite.avatica", "avatica")
+    .exclude("org.apache.calcite", "calcite-core")
     .exclude("ant", "ant")
     .exclude("org.apache.ant", "ant")
     .exclude("org.apache.avro", "avro")
@@ -224,11 +259,22 @@ libraryDependencies ++= Seq(
     .exclude("commons-collections", "commons-collections")
     .exclude("commons-logging", "commons-logging")
     .exclude("org.slf4j", "slf4j-api")
+    .exclude("com.google.protobuf", "protobuf-java")
+    .exclude("org.apache.arrow", "arrow-vector")
     .exclude("org.apache.calcite.avatica", "avatica")
     .exclude("org.apache.commons", "commons-lang3")
     .exclude("org.apache.calcite", "calcite-core")
 )
 excludeDependencies += "commons-cli" % "commons-cli"
+excludeDependencies += "dnsjava" % "dnsjava"
+excludeDependencies += "org.codehaus.janino" % "janino"
+excludeDependencies += "org.codehaus.janino" % "commons-compiler"
+//excludeDependencies += "org.apache.hadoop" % "hadoop-hdfs"
+excludeDependencies += "org.apache.calcite" % "calcite-core"
+excludeDependencies += "org.apache.calcite.avatica" % "avatica"
+excludeDependencies += "it.unimi.dsi" % "fastutil"
+excludeDependencies += "org.apache.twill" % "twill-common"
+excludeDependencies += "com.google.protobuf" % "protobuf-java"
 dependencyOverrides += "com.google.guava" % "guava" % "14.0.1"
 dependencyOverrides += "commons-codec" % "commons-codec" % "1.10"
 dependencyOverrides += "commons-logging" % "commons-logging" % "1.2"
@@ -275,6 +321,7 @@ assemblyMergeStrategy in assembly := {
   case x if x.endsWith("package-info.class") => MergeStrategy.first
   case PathList("META-INF", "services", xs @ _*) => MergeStrategy.first
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case x if x.startsWith("com/google/protobuf/")  => MergeStrategy.discard
   case x => MergeStrategy.first
 }
 

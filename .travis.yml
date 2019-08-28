@@ -49,7 +49,7 @@ before_install:
   #- export PYTHONPATH=$(ZIPS=("$SPARK_HOME"/python/lib/*.zip); IFS=:; echo "${ZIPS[*]}"):$PYTHONPATH
 
 install:
-  - build/sbt assembly -Drepourl=http://nexus-private.hortonworks.com/nexus/content/groups/public/
+  - build/sbt assembly
 
 
 script:

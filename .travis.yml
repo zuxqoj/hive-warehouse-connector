@@ -56,9 +56,9 @@ script:
   # Scala / Java
 
   # Python
-  - cd python
-  - python setup.py sdist
-  - coverage run pyspark_llap/sql/tests.py
-  - coverage report --include "*pyspark_llap-*pyspark_llap/*" --show-missing
-  - pycodestyle `find . -name '*.py'` --ignore=E402,E731,E241,W503,E226,E722,E741,E305 --max-line-length=100
+  #- cd python
+  #- python setup.py sdist
+  #- coverage run pyspark_llap/sql/tests.py
+  #- coverage report --include "*pyspark_llap-*pyspark_llap/*" --show-missing
+  #- pycodestyle `find . -name '*.py'` --ignore=E402,E731,E241,W503,E226,E722,E741,E305 --max-line-length=100
 

@@ -62,7 +62,13 @@ private[security] class HiveServer2CredentialProvider extends ServiceCredentialP
       require(principal != null,
         "spark.sql.hive.hiveserver2.jdbc.url.principal is not configured.")
 
-      val jdbcUrl = s"$hs2Url;principal=$principal"
+      val jdbcUrl = if (hs2Url.contains("?")){
+        val splits = hs2Url.split("?")
+        splits(0)+";principal="+principal+"?"+splits(1)
+      }else{
+        s"$hs2Url;principal=$principal"
+      }
+        
       logInfo(s"Getting HS2 delegation token for $userName via $jdbcUrl")
 
       doAsRealUser {

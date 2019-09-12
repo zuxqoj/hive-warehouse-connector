@@ -129,8 +129,15 @@ public enum HWConf {
        String deployMode = conf.get(SPARK_SUBMIT_DEPLOYMODE, "client");
        LOG.debug("Getting jdbc connection url for kerberized cluster with spark.submit.deployMode = {}", deployMode);
        if (deployMode.equals("cluster")) {
-         // 1. YARN Cluster mode for kerberized clusters
-         return format("%s;auth=delegationToken", conf.get(HIVESERVER2_JDBC_URL));
+          // 1. YARN Cluster mode for kerberized clusters
+          String hs2Url = conf.get(HIVESERVER2_JDBC_URL);
+          if (hs2Url.contains("?")){
+            String[] splits = hs2Url.split("\\?");
+            return splits[0]+";auth=delegationToken?"+splits[1];
+          }else{
+            return format("%s;auth=delegationToken", hs2Url);
+          }
+        }
        } else {
          // 2. YARN Client mode for kerberized clusters
          return format("%s;principal=%s",
